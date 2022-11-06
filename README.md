@@ -39,14 +39,14 @@ We'll model a simple traffic light to illustrate some statechart concepts.
 
 There are three steps to modeling via the `Statechart` library:
 - **DEFINE**
-  - `statechart/2`
-  - `state/3`
-  - `>>>/2`
+  - Start with a `statechart/2` block.
+  - Define states with `state/3`. Nest as deeply as you want.
+  - Define transitions using `>>>/2`.
 - **INSTANTIATE**
   - `MyStatechart.new/0`
 - **MANIPULATE**
-  - `trigger/2`
-  - `states/1`
+  - Send events via `trigger/2`.
+  - Get current nested state via `states/1`.
   - `in_state?/2`
   - `last_event_status/1`
 
@@ -142,17 +142,20 @@ why did we need another one?
 I wanted one that had very strict compile-time checks and a simple DSL.
 
 Other libraries you might look into:
-- `Machinery`
-- `as_fsm`
-- `gen_statem`
-- https://github.com/sasa1977/fsm
+- [`Machinery`](https://hexdocs.pm/machinery/Machinery.html)
+- [`as_fsm`](https://hexdocs.pm/as_fsm/readme.html)
+- [`GenStateMachine`](https://hexdocs.pm/gen_state_machine/GenStateMachine.html)
+- [`StateMachine`](https://hexdocs.pm/state_machine/StateMachine.html)
+- [`gen_statem`](https://www.erlang.org/doc/man/gen_statem.html)
+- [`fsm`](https://github.com/sasa1977/fsm)
 
 
 <!--- StateChart moduledoc end -->
 
 ## Roadmap
 
-- [X] compound states
+- [X] compound states (v0.1.0)
+- [X] defaults for non-leaf nodes (v0.1.0)
 - [ ] orthogonal states
 - [ ] composability via subcharts
 - [ ] on-enter and on-exit actions
@@ -160,8 +163,3 @@ Other libraries you might look into:
 - [ ] final state
 - [ ] state history (when re-entering a state, default to where you left off)
 - [ ] transition history
-
-## Tasks for 0.1.0 release
-
-- add typespecs for public functions
-- Make sure all Statechart functions/macros have a one-liner summary
