@@ -41,7 +41,7 @@ jobs:
       run: mix format --check-formatted
 
     - name: Run tests
-      run: mix test
+      run: mix test --exclude not_implemented
 
     - name: Retrieve PLT Cache
       uses: actions/cache@v1
