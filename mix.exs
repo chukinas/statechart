@@ -32,8 +32,7 @@ defmodule Statechart.MixProject do
       name: @project_name,
       licenses: ["MIT"],
       links: %{
-        # TODO add
-        "Changelog" => "https://hexdocs.pm/statechart/changelog.html"
+        "Changelog" => "https://hexdocs.pm/statechart/changelog.html",
         "GitHub" => @repo_url
       }
     ]
