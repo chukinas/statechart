@@ -136,7 +136,7 @@ defmodule Statechart.Machine do
   def states(%__MODULE__{statechart_module: module, current_local_id: local_id}) do
     nodes =
       module.__tree__()
-      |> Tree.fetch_root_to_self!(local_id: local_id)
+      |> Tree.fetch_ancestors_and_self!(local_id: local_id)
 
     nodes
     |> Stream.filter(&(!Node.local_root?(&1)))

@@ -57,7 +57,7 @@ defmodule Statechart.MixProject do
   defp deps do
     [
       # Project dependencies
-      {:modified_preorder_tree, "~> 0.1.1"},
+      {:modified_preorder_tree, "~> 0.2.0"},
       {:typed_struct, "~> 0.2.1"},
 
       # Development and test dependencies

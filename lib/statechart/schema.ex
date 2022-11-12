@@ -86,7 +86,7 @@ defmodule Statechart.Schema do
 
     tree = tree(schema)
 
-    with {:ok, nodes} <- Tree.fetch_root_to_self(tree, selector),
+    with {:ok, nodes} <- Tree.fetch_ancestors_and_self(tree, selector),
          {:ok, transition} <- fetch_transition_from_nodes(nodes, event) do
       {:ok, transition}
     end

@@ -6,7 +6,6 @@ defmodule Statechart.Schema.Tree do
 
   alias Statechart.Schema.Node
   alias Statechart.Schema.Location
-  alias Statechart.Schema.FutureMPTree
 
   #####################################
   # TYPES
@@ -91,8 +90,8 @@ defmodule Statechart.Schema.Tree do
 
   for {mod_name, fn_name} <- [
         {MPTree, :fetch_descendents},
-        {FutureMPTree, :fetch_family_tree},
-        {FutureMPTree, :fetch_root_to_self}
+        {MPTree, :fetch_family_tree},
+        {MPTree, :fetch_ancestors_and_self}
       ] do
     @spec unquote(fn_name)(t(), selector()) :: {:ok, nodes()} | :error
     def unquote(fn_name)(tree, selector) do
@@ -113,7 +112,7 @@ defmodule Statechart.Schema.Tree do
   @spec fetch_node(t(), selector()) :: {:ok, Node.t()} | :error
   def fetch_node(tree, selector) do
     with {:ok, match_fn} <- _to_match_fn(tree, selector) do
-      FutureMPTree.fetch_node(tree, match_fn)
+      MPTree.fetch_node(tree, match_fn)
     end
   end
 
@@ -131,7 +130,7 @@ defmodule Statechart.Schema.Tree do
   def fetch_transition_path(tree, start_selector, end_selector) do
     with {:ok, start_match_fn} <- _to_match_fn(tree, start_selector),
          {:ok, end_match_fn} <- _to_match_fn(tree, end_selector) do
-      FutureMPTree.fetch_transition_path(tree, start_match_fn, end_match_fn)
+      MPTree.fetch_transition_path(tree, start_match_fn, end_match_fn)
     end
   end
 
