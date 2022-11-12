@@ -55,7 +55,6 @@ defmodule Statechart.MixProject do
 
       # Development and test dependencies
       {:dialyxir, "~>1.2", only: [:dev, :test], runtime: false},
-      {:stream_data, "~>0.5", only: [:dev, :test]},
 
       # Documentation dependencies
       {:ex_doc, "~> 0.29", only: :dev, runtime: false}
