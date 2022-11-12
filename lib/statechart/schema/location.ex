@@ -52,7 +52,13 @@ defmodule Statechart.Schema.Location do
     alias Statechart.Schema.Location
 
     def inspect(%Location{} = location, _opts) do
-      pretty_module = location.module |> Module.split() |> Enum.at(-1)
+      pretty_module =
+        try do
+          location.module |> Module.split() |> Enum.at(-1)
+        rescue
+          ArgumentError -> location.module
+        end
+
       "#Location<#{pretty_module}:#{location.line},#{location.node_index}>"
     end
   end

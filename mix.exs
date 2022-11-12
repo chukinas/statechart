@@ -16,8 +16,7 @@ defmodule Statechart.MixProject do
       # Tests and Checks
       dialyzer: dialyzer(),
       test_coverage: [
-        # TODO change this back to 80
-        summary: [threshold: 85],
+        summary: [threshold: 80],
         ignore_modules: [~r/Inspect.*/, Statechart.Util.DevOnlyDocs]
       ],
 
@@ -51,7 +50,7 @@ defmodule Statechart.MixProject do
     ]
   end
 
-  defp elixirc_paths(env) when env in ~w/dev test/a, do: ["lib", "test/support"]
+  defp elixirc_paths(env) when env in ~w/test/a, do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
@@ -75,21 +74,9 @@ defmodule Statechart.MixProject do
       extras: ["CHANGELOG.md"],
       formatters: ["html"],
       groups_for_functions: [
-        DEFINE: &(&1[:section] == :build),
-        MANIPULATE: &(&1[:section] == :manipulate)
+        define: &(&1[:section] == :build),
+        Manipulate: &(&1[:section] == :manipulate)
       ],
-      # groups_for_modules: [
-      #   # API: [
-      #   #   Statechart,
-      #   #   StatechartError
-      #   # ],
-      #   Machine: ~r/Statechart.Machine/,
-      #   Schema: ~r/Statechart.Schema/,
-      #   Build: ~r/Statechart.Build/,
-      #   Transitions: ~r/Statechart.Transitions/,
-      #   Utility: ~r/Statechart.Utility/,
-      #   All: ~r/.*/
-      # ],
       main: "Statechart",
       nest_modules_by_prefix: [
         Statechart.Build,
@@ -102,7 +89,8 @@ defmodule Statechart.MixProject do
   defp dialyzer do
     [
       plt_core_path: "tmp/plts",
-      plt_file: {:no_warn, "tmp/plts/dialyzer.plt"}
+      plt_file: {:no_warn, "tmp/plts/dialyzer.plt"},
+      plt_add_apps: [:ex_unit]
     ]
   end
 end

@@ -16,17 +16,22 @@ defmodule Statechart.Build.AccSchema do
     env
   end
 
-  @spec update_tree(Macro.Env.t(), (Tree.t() -> Tree.t())) :: Macro.Env.t()
-  def update_tree(env, tree_update_fn) do
-    new_tree = env |> tree() |> tree_update_fn.()
-    put_tree(env, new_tree)
+  @spec put(Macro.Env.t(), Schema.t()) :: Macro.Env.t()
+  defp put(env, schema) do
+    Module.put_attribute(env.module, :__statechart_schema__, schema)
+    env
+  end
+
+  @spec update_schema(Macro.Env.t(), (Schema.t() -> Schema.t())) :: Macro.Env.t()
+  def update_schema(env, schema_update_fn) do
+    new_schema = env |> get |> schema_update_fn.()
+    put(env, new_schema)
   end
 
   @spec put_tree(Macro.Env.t(), Tree.t()) :: Macro.Env.t()
   def put_tree(env, %MPTree{} = tree) do
     new_schema = env |> get |> Schema.put_tree(tree)
-    :ok = Module.put_attribute(env.module, :__statechart_schema__, new_schema)
-    env
+    put(env, new_schema)
   end
 
   #####################################
@@ -34,7 +39,7 @@ defmodule Statechart.Build.AccSchema do
 
   @spec get(Macro.Env.t()) :: Schema.t()
   def get(env) do
-    %Schema{} = Module.get_attribute(env.module, :__statechart_schema__)
+    Module.get_attribute(env.module, :__statechart_schema__)
   end
 
   @spec tree(Macro.Env.t()) :: Tree.t()

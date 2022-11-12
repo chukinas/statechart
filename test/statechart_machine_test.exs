@@ -2,15 +2,16 @@ defmodule Statechart.MachineTest do
   # Even though this module references Statechart.Machine,
   # it's testing the Statechart API, which delegates out to it.
 
-  use ExUnit.Case
+  use Statechart.Case
   use Statechart
   alias Statechart.Machine
 
   def print_notice(_), do: IO.puts("Exiting the light cycle")
+
   # LATER introduce subchart
-  statechart module: LightCycle, default: :red do
-    # LATER this is ugly behaviour
-    on exit: &Statechart.MachineTest.print_notice/1
+  subchart_new module: LightCycle,
+               default: :red,
+               exit: &Statechart.MachineTest.print_notice/1 do
     state :red, do: :NEXT >>> :green
     state :yellow, do: :NEXT >>> :red
     state :green, do: :NEXT >>> :yellow
@@ -23,6 +24,7 @@ defmodule Statechart.MachineTest do
       subchart :on, LightCycle, do: :TOGGLE_POWER >>> :off
     end
 
+    # LATER: be able to define functions inside statechart block
     # CONVENIENCE FUNCTIONS FOR TESTS
     def at(:off), do: new()
     def at(:red), do: new() |> Statechart.trigger(:TOGGLE_POWER)
@@ -53,58 +55,30 @@ defmodule Statechart.MachineTest do
     end
   end
 
-  defmodule Sample do
-    use Statechart
-
-    statechart default: :d do
-      state :a do
-        state :b do
-          :GOTO_G >>> :g
-
-          state :c do
-            state :d do
-            end
-          end
-        end
-      end
-
-      state :e do
-        state :f do
-          state :g do
-          end
-        end
-      end
-    end
-  end
-
   describe "MyStatechart.machine/0" do
     test "returns a `Statechart.Machine.t`" do
       assert %Machine{} = MyStatechart.new()
     end
   end
 
-  describe "transition/3" do
-    defmodule SimpleToggle do
-      use Statechart
+  describe "trigger/3" do
+    statechart module: SimpleToggle, default: :on do
+      :GLOBAL_TURN_ON >>> :on
+      :GLOBAL_TURN_OFF >>> :off
 
-      statechart default: :on do
-        :GLOBAL_TURN_ON >>> :on
-        :GLOBAL_TURN_OFF >>> :off
+      state :on do
+        :TOGGLE >>> :off
+        :LOCAL_TURN_OFF >>> :off
+      end
 
-        state :on do
-          :TOGGLE >>> :off
-          :LOCAL_TURN_OFF >>> :off
-        end
-
-        state :off do
-          :TOGGLE >>> :on
-          :LOCAL_TURN_ON >>> :on
-        end
+      state :off do
+        :TOGGLE >>> :on
+        :LOCAL_TURN_ON >>> :on
       end
     end
 
     test "a transition registered directly on current node allows a transition" do
-      assert [:off] == SimpleToggle.new() |> Statechart.trigger(:TOGGLE) |> Statechart.states()
+      SimpleToggle.new() |> Statechart.trigger(:TOGGLE) |> assert_state(:off)
     end
 
     # LATER log messages about non-existent events
@@ -128,10 +102,6 @@ defmodule Statechart.MachineTest do
       toggle_after_non_local_event = Statechart.trigger(toggle, :LOCAL_TURN_ON)
       assert [:on] == Statechart.states(toggle_after_non_local_event)
       assert :error == Statechart.last_event_status(toggle_after_non_local_event)
-    end
-
-    defp assert_state(machine, expected_state) do
-      assert Statechart.in_state?(machine, expected_state)
     end
 
     test "a transition registered earlier in a node's path still allows an event" do
@@ -171,99 +141,6 @@ defmodule Statechart.MachineTest do
       DefaultsTest.new()
       |> Statechart.trigger(:GOTO_BRANCH_WITH_DEFAULT)
       |> assert_state(:b)
-    end
-  end
-
-  describe "on_exit and on_exit" do
-    test "for a subchart root having actions declared at both the subchart and parent levels" do
-      defmodule SubchartRootActionsBothLocalAndFromParent do
-        use Statechart
-
-        def action_entering_foo(_context), do: IO.puts("action declared by parent!")
-        def action_entering_subchart(_context), do: IO.puts("action declared by subchart!")
-
-        defmodule Subchart do
-          use Statechart
-
-          statechart do
-            on enter: &SubchartRootActionsBothLocalAndFromParent.action_entering_subchart/1
-          end
-        end
-
-        statechart default: :bar do
-          :GOTO_FOO >>> :foo
-
-          subchart :foo, Subchart do
-            on enter: &__MODULE__.action_entering_foo/1
-          end
-
-          state :bar
-        end
-      end
-
-      captured_io =
-        ExUnit.CaptureIO.capture_io(fn ->
-          SubchartRootActionsBothLocalAndFromParent.new() |> Statechart.trigger(:GOTO_FOO)
-        end)
-
-      assert captured_io =~ "declared by subchart!"
-      assert captured_io =~ "declared by parent!"
-    end
-
-    test "actions registered on a subchart's root persist after being inserted into a parent chart" do
-      defmodule SubchartRootHasActions do
-        use Statechart
-
-        def action_entering_subchart(_context), do: IO.puts("entering subchart!")
-
-        defmodule Subchart do
-          use Statechart
-
-          statechart do
-            on enter: &SubchartRootHasActions.action_entering_subchart/1
-          end
-        end
-
-        statechart default: :bar do
-          :GOTO_FOO >>> :foo
-          subchart :foo, Subchart
-          state :bar
-        end
-      end
-
-      captured_io =
-        ExUnit.CaptureIO.capture_io(fn ->
-          SubchartRootHasActions.new() |> Statechart.trigger(:GOTO_FOO)
-        end)
-
-      assert captured_io =~ "entering subchart!"
-    end
-
-    test "on-exit & -enter actions fire" do
-      defmodule OnExitEnterTest do
-        use Statechart
-
-        def action_put_a(_context), do: IO.puts("put a")
-        def action_put_b(_context), do: IO.puts("put b")
-
-        statechart default: :a do
-          :GOTO_B >>> :b
-
-          state :a do
-            on exit: &__MODULE__.action_put_a/1
-          end
-
-          state :b do
-            on enter: &__MODULE__.action_put_b/1
-          end
-        end
-      end
-
-      captured_io =
-        ExUnit.CaptureIO.capture_io(fn -> OnExitEnterTest.new() |> Statechart.trigger(:GOTO_B) end)
-
-      assert captured_io =~ "put a"
-      assert captured_io =~ "put b"
     end
   end
 

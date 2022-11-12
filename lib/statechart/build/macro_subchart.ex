@@ -10,30 +10,37 @@ defmodule Statechart.Build.MacroSubchart do
   alias Statechart.Build.AccSchema
   alias Statechart.Build.AccStep
   alias Statechart.Build.MacroState
-  alias Statechart.Build.MacroStatechart
+  alias Statechart.Build.MacroChart
   alias Statechart.Schema
   alias Statechart.Schema.Tree
 
-  def build_ast(name, module, do_block) do
+  def build_ast(name, module, opts, block) do
     quote do
-      require MacroStatechart
+      require MacroChart
       require AccNodeStack
 
-      MacroStatechart.throw_if_not_in_statechart_block(
+      MacroChart.throw_if_not_in_statechart_block(
         "subchart must be called inside a statechart/2 block"
       )
 
       AccNodeStack.node_stack do
-        MacroSubchart.__do__(__ENV__, unquote(name), unquote(module))
-        unquote(do_block)
+        MacroSubchart.__do__(
+          __ENV__,
+          unquote(name),
+          unquote(module),
+          unquote(opts |> Macro.escape())
+        )
+
+        unquote(block)
       end
     end
   end
 
-  @spec __do__(Macro.Env.t(), Node.name(), module()) :: :ok
-  def __do__(env, name, module) do
+  @spec __do__(Macro.Env.t(), Statechart.state(), module(), Keyword.t()) :: :ok
+  def __do__(env, name, module, opts) do
     case AccStep.get(env) do
-      :insert_nodes -> MacroState.insert_node(env, name)
+      :insert_nodes -> MacroState.insert_node(env, name, opts)
+      # LATER I don't this I need this extra step
       :insert_subcharts -> insert_subchart(env, module)
       _ -> :ok
     end

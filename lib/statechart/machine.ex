@@ -41,12 +41,20 @@ defmodule Statechart.Machine do
   #####################################
   # TYPES
 
-  typedstruct opaque: true, enforce: true do
+  # LATER incorporate non-zero-arity types into TypedStruct library
+  typedstruct enforce: true do
     field :statechart_module, module()
-    field :context, nil
+    field :context, term
     field :current_local_id, Location.local_id()
     field :last_event_status, :ok | :error, default: :ok
   end
+
+  @type t(context) :: %__MODULE__{
+          statechart_module: atom(),
+          context: context,
+          current_local_id: Location.local_id(),
+          last_event_status: :ok | :error
+        }
 
   @typedoc """
   This is the event type
@@ -56,15 +64,30 @@ defmodule Statechart.Machine do
   #####################################
   # CONSTRUCTORS
 
+  @type action(context) :: (context -> context)
+
+  defp apply_actions(initial_context, actions) do
+    Enum.reduce(actions, initial_context, fn
+      action, context when is_function(action, 0) ->
+        action.()
+        context
+
+      action, context when is_function(action, 1) ->
+        action.(context)
+    end)
+  end
+
   @doc false
-  @spec __new__(module) :: t()
-  def __new__(statechart_module) do
+  # @spec __new__(module, context) :: t(context) when context: var
+  def __new__(statechart_module, init_context) when is_atom(statechart_module) do
     %Schema{} = schema = statechart_module.__schema__()
     start_local_id = Schema.starting_local_id(schema)
+    actions = Schema.fetch_init_actions!(schema, local_id: start_local_id)
+    context = apply_actions(init_context, actions)
 
     %__MODULE__{
       statechart_module: statechart_module,
-      context: nil,
+      context: context,
       current_local_id: start_local_id
     }
   end
@@ -91,8 +114,8 @@ defmodule Statechart.Machine do
 
   With the machine now available
   """
-  @spec transition(t, event()) :: t
-  def transition(%__MODULE__{} = machine, event) do
+  @spec trigger(t, event()) :: t
+  def trigger(%__MODULE__{} = machine, event) do
     schema = __schema__(machine)
     origin_local_id = machine.current_local_id
 
@@ -102,19 +125,14 @@ defmodule Statechart.Machine do
            Schema.fetch_actions(schema, [local_id: origin_local_id],
              local_id: destination_local_id
            ) do
-      _context =
-        Enum.reduce(actions, machine.context, fn action, context ->
-          action.(context)
-        end)
-
-      struct!(machine, last_event_status: :ok, current_local_id: destination_local_id)
+      struct!(machine,
+        last_event_status: :ok,
+        current_local_id: destination_local_id
+      )
+      |> Map.update!(:context, &apply_actions(&1, actions))
     else
       _ -> put_in(machine.last_event_status, :error)
     end
-  end
-
-  def trigger(machine, event) do
-    transition(machine, event)
   end
 
   #####################################
@@ -123,7 +141,7 @@ defmodule Statechart.Machine do
   @doc """
   Get the machine's current state.
   """
-  @spec state(t()) :: Node.name()
+  @spec state(t()) :: Statechart.state()
   def state(%__MODULE__{current_local_id: local_id} = machine) do
     machine
     |> __schema__
@@ -132,7 +150,10 @@ defmodule Statechart.Machine do
     |> Node.name()
   end
 
-  @spec states(t) :: [Node.name()]
+  @spec context(t(context)) :: context when context: var
+  def context(%__MODULE__{context: val}), do: val
+
+  @spec states(t) :: [Statechart.state()]
   def states(%__MODULE__{statechart_module: module, current_local_id: local_id}) do
     nodes =
       module.__tree__()

@@ -1,7 +1,7 @@
 defmodule Statechart.Util.Inspect do
   use Statechart.Util.DevOnlyDocs,
     moduledoc: """
-    Functions for building more readable output with using `IO.inspect/2` and `IO.inspect/3`.
+    Functions for building more readable output when inspecting.
     """
 
   alias Inspect.Algebra
