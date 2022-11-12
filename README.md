@@ -48,11 +48,12 @@ There are three steps to modeling via the `Statechart` library:
   - Send events via `trigger/2`.
   - Get current nested state via `states/1`.
   - `in_state?/2`
+  - Get current context via `context/1`.
   - `last_event_status/1`
 
 We'll model the above traffic light using these three steps.
 
-### DEFINE
+### Define
 
 ```elixir
 defmodule TrafficLight do
@@ -73,7 +74,7 @@ defmodule TrafficLight do
 end
 ```
 
-### INSTANTIATE
+### Instantiate
 
 The module containing your statechart definition automatically has a `new/0` function injected into it.
 
@@ -81,9 +82,9 @@ The module containing your statechart definition automatically has a `new/0` fun
 traffic_light = TrafficLight.new()
 ```
 
-It returns you a `t:statechart/0` struct that you then pass to all the 'MANIPULATE' functions.
+It returns you a [statechart](`t:t/0`) struct that you then pass to all the 'MANIPULATE' functions.
 
-### MANIPULATE
+### Manipulate
 
 The machine starts in the `off` state:
 ```elixir
@@ -135,6 +136,179 @@ defmodule ToggleStatechart do
 end
 ```
 
+<!-- warning: this is referenced by some Statechart function docs -->
+## Actions
+
+You can associate two types of actions (side effects) with each state:
+- an `entry` action: performed _when entering_ the state, and
+- an `exit` action: performed _when exiting_ the state.
+
+Here is a Lightswitch that prints a message every time it exits and enters a new state:
+
+    defmodule LightSwitch do
+      use Statechart
+
+      statechart default: :off do
+        state :on,
+          entry: fn -> IO.puts("entering :on") end,
+          exit: fn -> IO.puts("exiting :on") end do
+          :TOGGLE >>> :off
+        end
+
+        state :off,
+          entry: fn -> IO.puts("entering :off") end,
+          exit: fn -> IO.puts("exiting :off") end do
+          :TOGGLE >>> :on
+        end
+      end
+    end
+
+    lightswitch = LightSwitch.new
+    # => "entering :off"
+
+    Statechart.trigger(lightswitch, :TOGGLE)
+    # => "exiting :off"
+    # => "entering :on"
+
+The actions above are all arity-0 functions that have side effects.
+It's usually much more useful though to use arity-1 functions that modify a context:
+
+### Context
+
+First, let's clear up some confusion created by the word "state" in relation to state machines and statecharts.
+Generally in computer science, "state" basically refers to anything that a process remembers or keeps track of.
+For example, a clock knows what time it is and an object-oriented-programming "Person" object might know the first and last name of the person it represents.
+Anything that has state is referred to as "stateful".
+
+Basic state machines are stateful too. The state they keep track is (confusingly) called their "state".
+For example, the above light switch "knows" whether it's in the `:on` state or the `:off` state.
+This wouldn't be half so bad were it not for the fact that many state machines keep track of a second kind of state, which we call the "context".
+The "context" is any data the state machine keeps track of in addition to its FSM-state.
+For example, a smart lightswitch might keep track of how many times it's been cycled on and off.
+A card game state machine might have a "drawing cards" state, and might have a context that tracks the cards each player has, whose turn it it, and which cards are in the draw and discard piles.
+
+From now on, "state" will refer to the FSM-specific state (`:on`, `:off`, etc).
+
+With all that out of the way, let's talk about the context.
+
+Let's model that lightswitch that tracks how many cycles it's undergone.
+
+    defmodule LightSwitch do
+      use Statechart
+      statechart default: :off, context: {non_neg_integer, 0} do
+        state :on, entry: &(&1 + 1), do: :OFF >>> :off
+        state :off, do: :ON >>> :on
+      end
+    end
+
+In this example we see:
+- The context type (`non_neg_integer()`) and initial value (`0`) declared using the `:context` option on `statechart/2`.
+  When this statechart is instantiated, it will start with a context of `0`.
+- Every time the switch is turned on, the context gets incremented by 1.
+  This is because the `:on` state has a "entry action" of `&(&1 + 1)`.
+
+### Multiple Actions
+
+In statecharts where multiple actions are declared per state and/or where states are nested,
+many actions might take place as a result of a single event.
+In these cases, order matters.
+Let's look at a contrived example.
+
+    statechart default: :alpaca,
+               context: {pos_integer, 1} do
+      :ALPHA >>> :beetle
+
+      state :alpaca,
+        entry: &(&1 + 1),
+        entry: &(&1 * 3),
+        exit: &(&1 - 2)
+
+      state :beetle,
+        entry: fn val -> val - 1 end
+    end
+
+The context is modified from its initial value of `1` to `6`.
+Note the order of operations here.
+The first action added one (`1 + 1 = 2`) and the second action multiplied by three (`2 * 3 = 6`).
+
+When we trigger the `:ALPHA` event (`statechart = Statechart.trigger(statechart, :ALPHA)`),
+we exit `:alpaca`, then enter `:beetle`, giving us a new context of `3`.
+The first action (from exiting `:alpaca`) subtracted two (`6 - 2 = 4`).
+The second action (from entering `:beetle`) subtracted one (`4 - 1 = 3`).
+
+### Default Context
+
+`:context` is an optional key for `statechart/2`.
+If left out, the context type defaults to `t:term/0` and the value to `nil`.
+
+<!-- warning: this is referenced by some Statechart function docs -->
+## Defaults
+
+One advantage statecharts have over FSMs is that they can have nested states.
+Here is the [TrafficLight module](#module-define) from above.
+
+```elixir
+statechart module: TrafficLight, default: :off do
+  state :off do
+    :TOGGLE >>> :on
+  end
+
+  state :on, default: :red do
+    :TOGGLE >>> :off
+    state :red,    do: :NEXT >>> :green
+    state :yellow, do: :NEXT >>> :red
+    state :green,  do: :NEXT >>> :yellow
+  end
+end
+```
+
+You can be in the `red/on` state for example,
+but you cannot be in the `on` state without also being in `red`, `yellow`, or `green`.
+What this means for you, the developer, is that you can target a less-specific state (e.g. `on`),
+as long as it is marked with a default,
+so the statechart knows with more-specific state to "fall into".
+This is why we added a `default: :red` options to the `:on` state.
+
+Note that note every parent state requires a default, only those targeted by transitions.
+Also, the root statechart needs a default (in our example, it has `default: :off`).
+
+<!-- warning: this is referenced by some Statechart function docs -->
+## Submodules
+
+`statechart/2` accepts a `:module` option.
+In the below example,
+the module containing the statechart is `Toggle.Statechart`
+```elixir
+defmodule Toggle do
+  use Statechart
+
+  statechart module: Statechart do
+    state :on, default: true, do: :TOGGLE >>> :off
+    state :off, do: :TOGGLE >>> :on
+  end
+end
+```
+
+In this way, many statecharts may be declared easily in one file:
+
+```elixir
+defmodule MyApp.Statechart do
+  use Statechart
+
+  # module: MyApp.Statechart.Toggle
+  statechart module: Toggle, default: :on do
+    state :on, do: :TOGGLE >>> :off
+    state :off, do: :TOGGLE >>> :on
+  end
+
+  # module: MyApp.Statechart.Switch
+  statechart module: Switch, default: :on do
+    state :on, do: :SWITCH_OFF >>> :off
+    state :off, do: :SWITCH_ON >>> :on
+  end
+end
+```
+
 ## Other statechart / state machine libraries
 
 With a plethora of other related libraries,
@@ -150,16 +324,19 @@ Other libraries you might look into:
 - [`fsm`](https://github.com/sasa1977/fsm)
 
 
-<!--- StateChart moduledoc end -->
-
 ## Roadmap
 
-- [X] compound states (v0.1.0)
-- [X] defaults for non-leaf nodes (v0.1.0)
-- [ ] orthogonal states
+- [X] `v0.1.0` hierarchical states (see Harel, §2)
+- [X] `v0.1.0` defaults (see Harel, Fig.6)
+- [X] `v0.2.0` context and actions (see Harel, §5)
+- [ ] actions associated with events (see γ/W in Harel, Fig.37)
+- [ ] events triggered by actions (see β in Harel, Fig.37)
+- [ ] orthogonality (see Harel, §3)
+- [ ] event conditions
 - [ ] composability via subcharts
-- [ ] on-enter and on-exit actions
-- [ ] custom 'data' state
 - [ ] final state
-- [ ] state history (when re-entering a state, default to where you left off)
+- [ ] state history (see Harel, Fig.10)
 - [ ] transition history
+
+<!--- StateChart moduledoc end -->
+

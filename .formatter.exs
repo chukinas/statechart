@@ -4,6 +4,8 @@ locals_without_parens = [
   state: 1,
   state: 2,
   on: 1,
+  subchart_new: 1,
+  subchart_new: 2,
   subchart: 2,
   subchart: 3
 ]
@@ -11,6 +13,6 @@ locals_without_parens = [
 [
   import_deps: [:typed_struct],
   inputs: ["{mix,.formatter}.exs", "{config,lib,test}/**/*.{ex,exs}"],
-  locals_without_parens: locals_without_parens,
+  locals_without_parens: locals_without_parens ++ [statechart_test_module: 1],
   export: [locals_without_parens: locals_without_parens]
 ]

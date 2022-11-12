@@ -17,15 +17,21 @@ defmodule Statechart.Schema do
   #####################################
   # TYPES
 
+  # LATER make use of this elsewhere
+  @type schema_type :: :statechart | :subchart
+
   typedstruct enforce: true do
     field :tree, Tree.t()
+    field :type, schema_type
   end
 
   #####################################
   # CONSTRUCTORS
 
-  def from_tree(tree) do
-    %__MODULE__{tree: tree}
+  def new(tree, opts \\ []) do
+    subchart? = !!opts[:subchart?]
+    type = if subchart?, do: :subchart, else: :statechart
+    %__MODULE__{tree: tree, type: type}
   end
 
   #####################################
@@ -55,7 +61,20 @@ defmodule Statechart.Schema do
     end
   end
 
-  @spec fetch_actions(t, Tree.selector(), Tree.selector()) :: {:ok, [Node.action_fn()]} | :error
+  @doc """
+  When creating a new machine, we need a list of all the :entry actions
+  all the way down to the starting node
+  """
+  @spec fetch_init_actions!(t, Tree.selector()) :: [Statechart.action()]
+  def fetch_init_actions!(schema, end_node_selector) do
+    schema
+    |> tree
+    |> Tree.fetch_ancestors_and_self!(end_node_selector)
+    |> Enum.flat_map(&Node.actions(&1, :entry))
+  end
+
+  @spec fetch_actions(t, Tree.selector(), Tree.selector()) ::
+          {:ok, [Statechart.action()]} | :error
   def fetch_actions(schema, start_node_selector, end_node_selector) do
     case schema
          |> tree
@@ -110,6 +129,10 @@ defmodule Statechart.Schema do
 
   @spec tree(t) :: Tree.t()
   def tree(%__MODULE__{tree: val}), do: val
+
+  # LATER this isn't used
+  @spec subchart?(t) :: boolean
+  def subchart?(%__MODULE__{type: chart_type}), do: chart_type == :subchart
 
   @spec starting_local_id(t) :: Location.local_id()
   def starting_local_id(%__MODULE__{} = schema) do

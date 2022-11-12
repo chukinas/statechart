@@ -9,7 +9,7 @@ defmodule Statechart.Build.MacroTransition do
   alias Statechart.Build.AccSchema
   alias Statechart.Build.AccStep
   alias Statechart.Build.AccNodeStack
-  alias Statechart.Build.MacroStatechart
+  alias Statechart.Build.MacroChart
   alias Statechart.Schema
   alias Statechart.Schema.Event
   alias Statechart.Schema.Location
@@ -18,9 +18,9 @@ defmodule Statechart.Build.MacroTransition do
 
   def build_ast(event, target_name) do
     quote bind_quoted: [event: event, target_name: target_name] do
-      require MacroStatechart
+      require MacroChart
 
-      MacroStatechart.throw_if_not_in_statechart_block(
+      MacroChart.throw_if_not_in_statechart_block(
         "transition must be called inside a statechart/2 block"
       )
 
@@ -28,7 +28,7 @@ defmodule Statechart.Build.MacroTransition do
     end
   end
 
-  @spec __do__(Macro.Env.t(), Event.t(), Node.name()) :: :ok
+  @spec __do__(Macro.Env.t(), Event.t(), Statechart.state()) :: :ok
   def __do__(env, event, target_name) do
     case AccStep.get(env) do
       :insert_transitions_and_defaults -> insert_transition(env, event, target_name)
@@ -36,7 +36,7 @@ defmodule Statechart.Build.MacroTransition do
     end
   end
 
-  @spec insert_transition(Macro.Env.t(), Event.t(), Node.name()) :: :ok
+  @spec insert_transition(Macro.Env.t(), Event.t(), Statechart.state()) :: :ok
   defp insert_transition(env, event, target_name) do
     schema = AccSchema.get(env)
     tree = Schema.tree(schema)
