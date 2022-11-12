@@ -8,11 +8,11 @@ defmodule Statechart.MixProject do
     [
       app: @project_name,
       version: "0.1.0",
-      aliases: aliases(),
-      elixir: "~> 1.13",
+      elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      dialyzer: dialyzer(),
 
       # Docs
       name: "Statechart",
@@ -33,7 +33,7 @@ defmodule Statechart.MixProject do
       licenses: ["MIT"],
       links: %{
         # TODO add
-        # "Changelog" => "tbd"
+        "Changelog" => "https://hexdocs.pm/statechart/changelog.html"
         "GitHub" => @repo_url
       }
     ]
@@ -55,7 +55,7 @@ defmodule Statechart.MixProject do
       {:typed_struct, "~> 0.2.1"},
 
       # Development and test dependencies
-      {:dialyxir, "~>1.2", only: [:dev], runtime: false},
+      {:dialyxir, "~>1.2", only: [:dev, :test], runtime: false},
       {:stream_data, "~>0.5", only: [:dev, :test]},
 
       # Documentation dependencies
@@ -63,14 +63,10 @@ defmodule Statechart.MixProject do
     ]
   end
 
-  defp aliases do
-    []
-  end
-
   defp docs do
     [
-      authors: ["Jonathan Chukinas"],
       assets: "assets",
+      authors: ["Jonathan Chukinas"],
       extras: ["CHANGELOG.md"],
       formatters: ["html"],
       groups_for_functions: [
@@ -95,6 +91,13 @@ defmodule Statechart.MixProject do
         Statechart.Schema,
         Statechart.Machine
       ]
+    ]
+  end
+
+  defp dialyzer do
+    [
+      plt_core_path: "tmp/plts",
+      plt_file: {:no_warn, "tmp/plts/dialyzer.plt"}
     ]
   end
 end
