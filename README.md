@@ -14,7 +14,7 @@ This package can be installed by adding `statechart` to your list of dependencie
 ```elixir
 def deps do
   [
-    {:statechart, "~> 0.1.0"}
+    {:statechart, "~> 0.2.0"}
   ]
 end
 ```
