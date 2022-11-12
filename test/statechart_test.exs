@@ -162,13 +162,18 @@ defmodule StatechartTest do
   # This should test for the line number
   # Should give suggestions for matching names ("Did you mean ...?")
   describe ">>>/2" do
-    test "an event targetting a branch node must provides a default path to a leaf node"
+    # LATER
+    # test "an event targetting a branch node must provides a default path to a leaf node"
 
-    test "raises if event targets a root that doesn't resolve"
+    # LATER
+    # test "raises if event targets a root that doesn't resolve"
     # This should test for the line number
-    test "raises a StatechartError on invalid event names"
-    test "raises if target does not resolve to a leaf node"
-    test "raises if target does not exist"
+    # LATER
+    # test "raises a StatechartError on invalid event names"
+    # LATER
+    # test "raises if target does not resolve to a leaf node"
+    # LATER
+    # test "raises if target does not exist"
 
     test "raises if one of node's ancestors already has a transition with this event" do
       assert_raise StatechartError, ~r/events must be unique/, fn ->
