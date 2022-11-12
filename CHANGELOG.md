@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2022-11-XX
+
+### Added
+
+* `:entry` and `:exit` opts for `Statechart.statechart/2` and `Statechart.state/3`
+* `:context` opt for `Statechart.statechart/2`
+* `Statechart.context/1`
+
 ## [0.1.0] - 2022-11-06
 
 ### Added
@@ -16,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Statechart.last_event_status/1`
 * `Statechart.states/1`
 * `Statechart.trigger/2`
-* defaults for both `Statechart.statechart/2` and `Statechart.state/3`
+* `:default` opt for `Statechart.statechart/2` and `Statechart.state/3`
 
-[0.1.0]: https://github.com/jonathanchukinas/modified_preorder_tree/releases/tag/v0.1.0
+[0.2.0]: https://github.com/jonathanchukinas/statechart/releases/tag/v0.2.0
+[0.1.0]: https://github.com/jonathanchukinas/statechart/releases/tag/v0.1.0

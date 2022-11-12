@@ -48,6 +48,7 @@ There are three steps to modeling via the `Statechart` library:
   - Send events via `trigger/2`.
   - Get current nested state via `states/1`.
   - `in_state?/2`
+  - Get current context via `context/1`.
   - `last_event_status/1`
 
 We'll model the above traffic light using these three steps.
@@ -135,6 +136,69 @@ defmodule ToggleStatechart do
 end
 ```
 
+## Actions and Context (Harel §5)
+
+An action is an instantaneous effect that can happen when entering or exiting a state.
+Context is a chunk of data that the statechart is aware of.
+
+If you were modeling a lightswitch, you might want to keep track of how many cycles it's undergone.
+
+    defmodule LightSwitch do
+      use Statechart
+      statechart default: :off,
+                 context: {non_neg_integer, 0} do
+        state :on, entry: &(&1 + 1), do: :OFF >>> :off
+        state :off, do: :ON >>> :on
+      end
+    end
+
+In this example we see:
+- The context type (`non_neg_integer()`) and initial value (`0`) declared using the `:context` option on `statechart/2`.
+  When this statechart is instantiated, it will start with a context of `0`.
+- Every time the switch is turned on, the context gets incremented by 1.
+  This is because the `:on` state has a "entry action" of `&(&1 + 1)`.
+
+### Multiple Actions
+
+In statecharts where multiple actions are declared per state and/or where states are nested,
+many actions might take place as a result of a single event.
+In these cases, order matters.
+Let's look at a contrived example.
+
+    defmodule MathDoohickey do
+      use Statechart
+      statechart default: :alpaca,
+                 context: {pos_integer, 1}
+                 transition: {:ALPHA, :beetle} do
+        state :alpaca, entry: &(&1 + 1),
+                       entry: &(&1 * 3),
+                       exit: &(&1 - 2)
+        state :beetle, entry: fn val -> val - 1 end
+      end
+    end
+
+When this chart is instantiated (`statechart = MathDoohickey.new()`),
+the context is modified from its initial value of `1` to `6`.
+Note the order of operations here.
+The first action added one (`1 + 1 = 2`) and the second action multiplied by three (`2 * 3 = 6`).
+
+When we trigger the `:ALPHA` event (`statechart = Statechart.trigger(statechart, :ALPHA)`),
+we exit `:alpaca`, then enter `:beetle`, giving us a new context of `3`.
+The first action (from exiting `:alpaca`) subtracted two (`6 - 2 = 4`).
+The second action (from entering `:beetle`) subtracted one (`4 - 1 = 3`).
+
+### Arity
+
+In the examples above, all the action functions were arity-1.
+They are passed a context and return a transformed context.
+
+An action can also have an arity of 0. Usually this is for applying side effects.
+
+### Default Context
+
+`:context` is an optional key for `statechart/2`.
+If left out, the context type defaults to `t:term/0` and the value to `nil`.
+
 ## Other statechart / state machine libraries
 
 With a plethora of other related libraries,
@@ -150,16 +214,19 @@ Other libraries you might look into:
 - [`fsm`](https://github.com/sasa1977/fsm)
 
 
-<!--- StateChart moduledoc end -->
-
 ## Roadmap
 
-- [X] compound states (v0.1.0)
-- [X] defaults for non-leaf nodes (v0.1.0)
-- [ ] orthogonal states
+- [X] `v0.1.0` hierarchical states (see Harel, §2)
+- [X] `v0.1.0` defaults (see Harel, Fig.6)
+- [X] `v0.2.0` context and actions (see Harel, §5)
+- [ ] actions associated with events (see γ/W in Harel, Fig.37)
+- [ ] events triggered by actions (see β in Harel, Fig.37)
+- [ ] orthogonality (see Harel, §3)
+- [ ] event conditions
 - [ ] composability via subcharts
-- [ ] on-enter and on-exit actions
-- [ ] custom 'data' state
 - [ ] final state
-- [ ] state history (when re-entering a state, default to where you left off)
+- [ ] state history (see Harel, Fig.10)
 - [ ] transition history
+
+<!--- StateChart moduledoc end -->
+

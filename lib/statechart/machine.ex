@@ -41,12 +41,20 @@ defmodule Statechart.Machine do
   #####################################
   # TYPES
 
-  typedstruct opaque: true, enforce: true do
+  # LATER incorporate non-zero-arity types into TypedStruct library
+  typedstruct enforce: true do
     field :statechart_module, module()
-    field :context, nil
+    field :context, term
     field :current_local_id, Location.local_id()
     field :last_event_status, :ok | :error, default: :ok
   end
+
+  @type t(context) :: %__MODULE__{
+          statechart_module: atom(),
+          context: context,
+          current_local_id: Location.local_id(),
+          last_event_status: :ok | :error
+        }
 
   @typedoc """
   This is the event type
@@ -56,15 +64,26 @@ defmodule Statechart.Machine do
   #####################################
   # CONSTRUCTORS
 
+  @type action(context) :: (context -> context)
+
+  @spec starting_context(context, [action(context)]) :: context when context: var
+  def starting_context(context, []), do: context
+
+  def starting_context(context, [action | rest]) do
+    starting_context(action.(context), rest)
+  end
+
   @doc false
-  @spec __new__(module) :: t()
-  def __new__(statechart_module) do
+  # @spec __new__(module, context) :: t(context) when context: var
+  def __new__(statechart_module, init_context) when is_atom(statechart_module) do
     %Schema{} = schema = statechart_module.__schema__()
     start_local_id = Schema.starting_local_id(schema)
+    actions = Schema.fetch_init_actions!(schema, local_id: start_local_id)
+    context = starting_context(init_context, actions)
 
     %__MODULE__{
       statechart_module: statechart_module,
-      context: nil,
+      context: context,
       current_local_id: start_local_id
     }
   end
@@ -131,6 +150,9 @@ defmodule Statechart.Machine do
     |> Tree.fetch_node!(local_id: local_id)
     |> Node.name()
   end
+
+  @spec context(t(context)) :: context when context: var
+  def context(%__MODULE__{context: val}), do: val
 
   @spec states(t) :: [Node.name()]
   def states(%__MODULE__{statechart_module: module, current_local_id: local_id}) do

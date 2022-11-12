@@ -8,32 +8,43 @@ defmodule Statechart.Build.MacroState do
   alias Statechart.Build.AccNodeStack
   alias Statechart.Build.AccSchema
   alias Statechart.Build.AccStep
-  alias Statechart.Build.MacroStatechart
+  alias Statechart.Build.MacroChart
+  alias Statechart.Build.MacroOpts
   alias Statechart.Schema
   alias Statechart.Schema.Node
   alias Statechart.Schema.Tree
 
-  def build_ast(name, opts, do_block) do
+  def build_ast(name, opts, block) do
+    :ok = MacroOpts.validate_keys(opts, :state)
+
     quote do
-      require MacroStatechart
+      require MacroChart
       require AccNodeStack
 
-      MacroStatechart.throw_if_not_in_statechart_block(
+      MacroChart.throw_if_not_in_statechart_block(
         "state/1 and state/2 must be called inside a statechart/2 block"
       )
 
       AccNodeStack.node_stack do
-        MacroState.__do__(__ENV__, unquote(name), unquote(opts))
-        unquote(do_block)
+        # LATER focus these opts down
+        MacroState.__do__(
+          __ENV__,
+          unquote(name),
+          unquote(Keyword.take(opts, ~w/entry exit/a)),
+          unquote(opts)
+        )
+
+        unquote(block)
       end
     end
   end
 
-  @spec __do__(Macro.Env.t(), Node.name(), Keyword.t()) :: :ok
-  def __do__(env, name, opts \\ []) do
+  @spec __do__(Macro.Env.t(), Node.name(), Node.action_specs(), Keyword.t()) :: :ok
+  # LATER make options specific
+  def __do__(env, name, action_specs, opts) do
     case AccStep.get(env) do
       :insert_nodes ->
-        insert_node(env, name)
+        insert_node(env, name, action_specs)
 
       :insert_transitions_and_defaults ->
         insert_default(env, opts)
@@ -49,8 +60,8 @@ defmodule Statechart.Build.MacroState do
     :ok
   end
 
-  @spec insert_node(Macro.Env.t(), Node.name()) :: Macro.Env.t()
-  def insert_node(env, name) do
+  @spec insert_node(Macro.Env.t(), Node.name(), [Node.action_spec()]) :: Macro.Env.t()
+  def insert_node(env, name, action_specs) do
     schema = AccSchema.get(env)
 
     new_node =
@@ -60,6 +71,12 @@ defmodule Statechart.Build.MacroState do
 
         Node.new(name, location)
       end
+
+    # LATER take advantage of this in statechart?
+    new_node =
+      action_specs
+      |> Keyword.take(~w/entry exit/a)
+      |> Enum.reduce(new_node, fn {type, action}, node -> Node.add_action(node, type, action) end)
 
     new_tree =
       case Tree.validate_insert(schema.tree, new_node, local_id: AccNodeStack.parent_local_id(env)) do
@@ -88,6 +105,7 @@ defmodule Statechart.Build.MacroState do
     end
   end
 
+  # LATER I don't like that this is the same name
   @spec insert_default(Schema.t(), Node.t(), Node.name()) :: Schema.t()
   def insert_default(schema, origin_node, target_name) do
     if Node.leaf?(origin_node) do

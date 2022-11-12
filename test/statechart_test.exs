@@ -1,35 +1,32 @@
 defmodule StatechartTest do
-  use ExUnit.Case
-  alias Statechart.Machine
+  use Statechart.Case
+  use Statechart
   alias Statechart.Schema
   alias Statechart.Schema.Node
   alias Statechart.Schema.Tree
-
-  use Statechart
+  doctest Statechart
 
   test "single node smoke test" do
-    # LATER since root always needs a default, maybe that shouldn't be an option...
     # LATER ? add option to have the first node be the default
-    statechart module: SmoketestStatechart, default: :blarg do
-      state :blarg
+    statechart_test_module mod do
+      statechart default: :blarg do
+        state :blarg
+      end
     end
 
-    assert length(SmoketestStatechart.__nodes__()) == 2
+    assert length(mod.__nodes__()) == 2
   end
 
   describe "statechart/2" do
     test "create a statechart within a submodule" do
-      use Statechart
-
-      statechart module: ChartDefinedViaOpts do
+      statechart module: module_name() do
         nil
       end
     end
 
     test "raises if statechart was already called in this module" do
       assert_raise StatechartError, ~r/Only one statechart/, fn ->
-        defmodule InvalidDoubleStatechart do
-          use Statechart
+        statechart_test_module do
           statechart do: nil
           statechart do: nil
         end
@@ -45,15 +42,21 @@ defmodule StatechartTest do
       end
     end
 
-    test "does not raise if no default is set and if there are no states declared" do
-      statechart module: NoDefaultSetButNoStates do
+    # LATER add statechart/0 to API
+    test "statechart/0 succeeds" do
+      statechart_test_module do
+        statechart()
       end
+    end
 
-      assert %Machine{} = NoDefaultSetButNoStates.new()
+    test "does not raise if no default is set and if there are no states declared" do
+      statechart_test_module do
+        statechart do: nil
+      end
     end
   end
 
-  describe "state/1 or /2" do
+  describe "state macro" do
     test "raises if called before statechart block" do
       assert_raise StatechartError, ~r/must be called inside/, fn ->
         defmodule StateOutOfScopeBefore do
@@ -108,12 +111,44 @@ defmodule StatechartTest do
       end
     end
 
-    test "do-block is optional" do
-      defmodule StateWithNoDoBlock do
-        use Statechart
+    test "state/1 accepts just the state name" do
+      statechart_test_module mod do
+        statechart default: :alpaca do
+          state :alpaca
+        end
+      end
 
-        statechart default: :hello do
-          state :hello
+      assert [:alpaca] == mod.new |> Statechart.states()
+    end
+
+    test "state/2 arg2 accepts a do-block" do
+      statechart_test_module mod do
+        statechart default: :child_state do
+          state :parent_state do
+            state :child_state
+          end
+        end
+      end
+
+      assert [:parent_state, :child_state] == mod.new |> Statechart.states()
+    end
+
+    test "state/2 arg2 accepts an opts list" do
+      statechart_test_module mod do
+        statechart default: :alpaca do
+          state :alpaca, entry: &List.wrap/1
+        end
+      end
+
+      assert [] == mod.new |> Statechart.context()
+    end
+
+    test "state will throw if opts contain invalid keys" do
+      assert_raise ArgumentError, ~r/Allowed opts for state are/, fn ->
+        statechart_test_module do
+          statechart default: :battlestar do
+            state :alpaca, invalid_key: :blarg
+          end
         end
       end
     end
@@ -190,19 +225,133 @@ defmodule StatechartTest do
     end
   end
 
-  describe "on/1" do
-    test "raises on invalid input" do
-      assert_raise StatechartError, ~r/single-item keyword list with a/, fn ->
-        defmodule MyStatechart do
-          use Statechart
+  describe "ACTIONS & CONTEXT" do
+    test "default context is `nil`" do
+      defmodule Statechart4 do
+        statechart do: nil
+      end
 
-          statechart do
-            state :the_only_state do
-              on not_a_valid_action_type: fn -> IO.puts("This will never print") end
-            end
+      assert nil == Statechart4.new() |> Statechart.context()
+    end
+
+    test "statechart/2 :context key determines the starting context" do
+      statechart_test_module mod do
+        statechart context: {term, 42}
+      end
+
+      assert 42 == mod.new() |> Statechart.context()
+    end
+
+    # TODO move to support
+    defmacrop assert_context(statechart, pattern) do
+      quote do
+        assert unquote(pattern) = unquote(statechart) |> Statechart.context()
+      end
+    end
+
+    test "`on :entry` works at root level" do
+      statechart_test_module mod do
+        statechart entry: &List.wrap/1
+      end
+
+      assert_context(mod.new(), [])
+    end
+
+    test "statechart/1 raises ArgumentError if passed an :exit opt" do
+      assert_raise ArgumentError, ~r/Allowed opts for statechart are/, fn ->
+        statechart_test_module do
+          statechart exit: &List.wrap/1
+        end
+      end
+    end
+
+    test "statechart/2 raises ArgumentError if passed an :exit opt" do
+      assert_raise ArgumentError, ~r/Allowed opts for statechart are/, fn ->
+        statechart_test_module do
+          statechart exit: &List.wrap/1 do
+            state :alpaca
           end
         end
       end
+    end
+
+    test "`on :exit` is valid at root level of subchart" do
+      statechart_test_module do
+        subchart_new exit: &IO.inspect/1
+      end
+    end
+
+    test "for a subchart root having actions declared at both the subchart and parent levels" do
+      defmodule SubchartRootActionsBothLocalAndFromParent do
+        use Statechart
+
+        def action_entering_foo(_context), do: IO.puts("action declared by parent!")
+        def action_entering_subchart(_context), do: IO.puts("action declared by subchart!")
+
+        defmodule Subchart do
+          statechart entry: &SubchartRootActionsBothLocalAndFromParent.action_entering_subchart/1
+        end
+
+        statechart default: :bar do
+          :GOTO_FOO >>> :foo
+          subchart :foo, Subchart, entry: &__MODULE__.action_entering_foo/1
+          state :bar
+        end
+      end
+
+      captured_io =
+        ExUnit.CaptureIO.capture_io(fn ->
+          SubchartRootActionsBothLocalAndFromParent.new() |> Statechart.trigger(:GOTO_FOO)
+        end)
+
+      assert captured_io =~ "declared by subchart!"
+      assert captured_io =~ "declared by parent!"
+    end
+
+    test "actions registered on a subchart's root persist after being inserted into a parent chart" do
+      defmodule SubchartRootHasActions do
+        use Statechart
+
+        def action_entering_subchart(_context), do: IO.puts("entering subchart!")
+
+        defmodule Subchart do
+          statechart entry: &SubchartRootHasActions.action_entering_subchart/1
+        end
+
+        statechart default: :bar do
+          :GOTO_FOO >>> :foo
+          subchart :foo, Subchart
+          state :bar
+        end
+      end
+
+      captured_io =
+        ExUnit.CaptureIO.capture_io(fn ->
+          SubchartRootHasActions.new() |> Statechart.trigger(:GOTO_FOO)
+        end)
+
+      assert captured_io =~ "entering subchart!"
+    end
+
+    test "exit & entry actions fire" do
+      defmodule OnExitEnterTest do
+        use Statechart
+
+        def action_put_a(_context), do: IO.puts("put a")
+        def action_put_b(_context), do: IO.puts("put b")
+
+        statechart default: :a do
+          :GOTO_B >>> :b
+          state :a, exit: &__MODULE__.action_put_a/1
+          state :b, entry: &__MODULE__.action_put_b/1
+        end
+      end
+
+      captured_io =
+        ExUnit.CaptureIO.capture_io(fn -> OnExitEnterTest.new() |> Statechart.trigger(:GOTO_B) end)
+
+      assert captured_io =~ "put a"
+      assert captured_io =~ "put b"
     end
   end
 end

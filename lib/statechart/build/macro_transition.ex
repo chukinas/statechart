@@ -9,7 +9,7 @@ defmodule Statechart.Build.MacroTransition do
   alias Statechart.Build.AccSchema
   alias Statechart.Build.AccStep
   alias Statechart.Build.AccNodeStack
-  alias Statechart.Build.MacroStatechart
+  alias Statechart.Build.MacroChart
   alias Statechart.Schema
   alias Statechart.Schema.Event
   alias Statechart.Schema.Location
@@ -18,9 +18,9 @@ defmodule Statechart.Build.MacroTransition do
 
   def build_ast(event, target_name) do
     quote bind_quoted: [event: event, target_name: target_name] do
-      require MacroStatechart
+      require MacroChart
 
-      MacroStatechart.throw_if_not_in_statechart_block(
+      MacroChart.throw_if_not_in_statechart_block(
         "transition must be called inside a statechart/2 block"
       )
 

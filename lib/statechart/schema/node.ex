@@ -12,18 +12,14 @@ defmodule Statechart.Schema.Node do
   #####################################
   # TYPES
 
-  @typedoc """
-  Describes the current state.
-
-  Being a valid type isn't necessarilly good enough by itself, of course.
-  State is always subject to validation by the `Statechart.Transitions` module.
-  """
-  @type state :: name()
-
-  @type action_type :: :exit | :enter
-  @type action_fn :: (state(), term -> term)
-  @type reducer :: (t() -> t())
+  # LATER I have entry and exit hardcoded all over the place. Fix.
+  @type action_type :: :entry | :exit
+  # TODO should rely on the statechart type
   @type name :: atom()
+  # TODO is this already in Statechart?
+  @type action_spec :: {action_type, Statechart.action()}
+  # TODO silly type proliferation?
+  @type action_specs :: [action_spec]
 
   typedstruct enforce: true do
     plugin MPTreeNode
@@ -31,11 +27,9 @@ defmodule Statechart.Schema.Node do
     field :location, Location.t(), enforce: false
     field :transitions, [Transition.t()], default: []
     field :default, Location.local_id(), enforce: false
-    field :actions, [{action_type, action_fn}], default: []
+    field :actions, [action_spec], default: []
     field :local_root?, boolean, default: false
   end
-
-  def is_action_type(maybe_action_type), do: maybe_action_type in ~w/exit enter/a
 
   #####################################
   # CONSTRUCTORS
@@ -66,14 +60,10 @@ defmodule Statechart.Schema.Node do
   #####################################
   # Validating Reducers
 
-  @spec validate_add_action(t, action_type(), term) :: {:ok, t} | :error
-  def validate_add_action(%__MODULE__{actions: actions} = node, action_type, fun) do
-    if is_action_type(action_type) do
-      node = struct!(node, actions: [{action_type, fun} | actions])
-      {:ok, node}
-    else
-      :error
-    end
+  @spec add_action(t, action_type(), term) :: t
+  def add_action(%__MODULE__{actions: actions} = node, action_type, fun)
+      when action_type in ~w/entry exit/a do
+    struct!(node, actions: [{action_type, fun} | actions])
   end
 
   @spec validate_set_default(t, Location.local_id()) :: {:ok, t} | :error
@@ -96,7 +86,7 @@ defmodule Statechart.Schema.Node do
   @spec local_id(t) :: Location.local_id()
   def local_id(%__MODULE__{location: location}), do: Location.local_id(location)
 
-  @spec actions(t, action_type()) :: [action_fn()]
+  @spec actions(t, action_type()) :: [Statechart.action()]
   def actions(%__MODULE__{actions: actions}, action_type) do
     Enum.flat_map(actions, fn
       {^action_type, action_fn} -> [action_fn]

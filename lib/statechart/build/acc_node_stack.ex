@@ -75,4 +75,10 @@ defmodule Statechart.Build.AccNodeStack do
     [current_node_index | _] = Module.get_attribute(env.module, :__statechart_node_stack__)
     {env.module, current_node_index}
   end
+
+  @spec at_root?(Macro.Env.t()) :: boolean
+  def at_root?(env) do
+    node_stack = Module.get_attribute(env.module, :__statechart_node_stack__)
+    match?([_], node_stack)
+  end
 end

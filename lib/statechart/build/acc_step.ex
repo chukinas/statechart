@@ -8,7 +8,7 @@ defmodule Statechart.Build.AccStep do
   # API
 
   @type t ::
-          :insert_root_node
+          :init
           | :insert_nodes
           | :insert_transitions_and_defaults
           | :insert_subcharts
@@ -37,7 +37,7 @@ defmodule Statechart.Build.AccStep do
   def __list__ do
     # CONSIDER do transitions, default, and subcharts.. can they all go at the same time?
     ~w/
-    insert_root_node
+    init
     insert_nodes
     insert_subcharts
     insert_actions

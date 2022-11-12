@@ -85,6 +85,13 @@ defmodule Statechart.Schema.Tree do
     end
   end
 
+  @spec update_root(t, MPTree.update_fn()) :: t
+  def update_root(tree, update_fn) do
+    [root | rest] = tree.nodes
+    struct!(tree, nodes: [update_fn.(root) | rest])
+    #  update_in(tree.nodes[Access.at!(0)], update_fn)
+  end
+
   #####################################
   # CONVERTERS
 
@@ -127,10 +134,17 @@ defmodule Statechart.Schema.Tree do
     end
   end
 
+  # LATER I don't like the mismatch between :entry here and :enter in MPTree.
+  @spec fetch_transition_path(t, selector, selector) ::
+          {:ok, [{:entry | :exit, Node.t()}]} | :error
   def fetch_transition_path(tree, start_selector, end_selector) do
     with {:ok, start_match_fn} <- _to_match_fn(tree, start_selector),
          {:ok, end_match_fn} <- _to_match_fn(tree, end_selector) do
       MPTree.fetch_transition_path(tree, start_match_fn, end_match_fn)
+      |> update_in([Access.elem(1), Access.all(), Access.elem(0)], fn
+        :enter -> :entry
+        :exit -> :exit
+      end)
     end
   end
 
@@ -154,7 +168,7 @@ defmodule Statechart.Schema.Tree do
   end
 
   @spec root(t) :: Node.t()
-  defdelegate root(tree), to: MPTree, as: :__root__
+  def root(tree), do: MPTree.__root__(tree)
 
   #####################################
   # HELPERS

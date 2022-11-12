@@ -4,6 +4,8 @@ locals_without_parens = [
   state: 1,
   state: 2,
   on: 1,
+  subchart_new: 1,
+  subchart_new: 2,
   subchart: 2,
   subchart: 3
 ]

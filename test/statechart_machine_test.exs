@@ -8,9 +8,9 @@ defmodule Statechart.MachineTest do
 
   def print_notice(_), do: IO.puts("Exiting the light cycle")
   # LATER introduce subchart
-  statechart module: LightCycle, default: :red do
-    # LATER this is ugly behaviour
-    on exit: &Statechart.MachineTest.print_notice/1
+  subchart_new module: LightCycle,
+               default: :red,
+               exit: &Statechart.MachineTest.print_notice/1 do
     state :red, do: :NEXT >>> :green
     state :yellow, do: :NEXT >>> :red
     state :green, do: :NEXT >>> :yellow
@@ -171,99 +171,6 @@ defmodule Statechart.MachineTest do
       DefaultsTest.new()
       |> Statechart.trigger(:GOTO_BRANCH_WITH_DEFAULT)
       |> assert_state(:b)
-    end
-  end
-
-  describe "on_exit and on_exit" do
-    test "for a subchart root having actions declared at both the subchart and parent levels" do
-      defmodule SubchartRootActionsBothLocalAndFromParent do
-        use Statechart
-
-        def action_entering_foo(_context), do: IO.puts("action declared by parent!")
-        def action_entering_subchart(_context), do: IO.puts("action declared by subchart!")
-
-        defmodule Subchart do
-          use Statechart
-
-          statechart do
-            on enter: &SubchartRootActionsBothLocalAndFromParent.action_entering_subchart/1
-          end
-        end
-
-        statechart default: :bar do
-          :GOTO_FOO >>> :foo
-
-          subchart :foo, Subchart do
-            on enter: &__MODULE__.action_entering_foo/1
-          end
-
-          state :bar
-        end
-      end
-
-      captured_io =
-        ExUnit.CaptureIO.capture_io(fn ->
-          SubchartRootActionsBothLocalAndFromParent.new() |> Statechart.trigger(:GOTO_FOO)
-        end)
-
-      assert captured_io =~ "declared by subchart!"
-      assert captured_io =~ "declared by parent!"
-    end
-
-    test "actions registered on a subchart's root persist after being inserted into a parent chart" do
-      defmodule SubchartRootHasActions do
-        use Statechart
-
-        def action_entering_subchart(_context), do: IO.puts("entering subchart!")
-
-        defmodule Subchart do
-          use Statechart
-
-          statechart do
-            on enter: &SubchartRootHasActions.action_entering_subchart/1
-          end
-        end
-
-        statechart default: :bar do
-          :GOTO_FOO >>> :foo
-          subchart :foo, Subchart
-          state :bar
-        end
-      end
-
-      captured_io =
-        ExUnit.CaptureIO.capture_io(fn ->
-          SubchartRootHasActions.new() |> Statechart.trigger(:GOTO_FOO)
-        end)
-
-      assert captured_io =~ "entering subchart!"
-    end
-
-    test "on-exit & -enter actions fire" do
-      defmodule OnExitEnterTest do
-        use Statechart
-
-        def action_put_a(_context), do: IO.puts("put a")
-        def action_put_b(_context), do: IO.puts("put b")
-
-        statechart default: :a do
-          :GOTO_B >>> :b
-
-          state :a do
-            on exit: &__MODULE__.action_put_a/1
-          end
-
-          state :b do
-            on enter: &__MODULE__.action_put_b/1
-          end
-        end
-      end
-
-      captured_io =
-        ExUnit.CaptureIO.capture_io(fn -> OnExitEnterTest.new() |> Statechart.trigger(:GOTO_B) end)
-
-      assert captured_io =~ "put a"
-      assert captured_io =~ "put b"
     end
   end
 
