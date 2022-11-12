@@ -139,7 +139,7 @@ defmodule StatechartTest do
       schema = Sample.__schema__()
       tree = Schema.tree(schema)
       {Sample, 5} = d_node_local_id = tree |> Tree.fetch_node!(name: :d) |> Node.local_id()
-      {:ok, d_path} = Tree.fetch_root_to_self(tree, local_id: d_node_local_id)
+      {:ok, d_path} = Tree.fetch_ancestors_and_self(tree, local_id: d_node_local_id)
       assert length(d_path) == 5
       d_path_as_atoms = Enum.map(d_path, &Node.name/1)
       assert d_path_as_atoms == [Sample | ~w/a b c d/a]
