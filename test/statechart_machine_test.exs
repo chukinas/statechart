@@ -77,39 +77,10 @@ defmodule Statechart.MachineTest do
     end
   end
 
-  #####################################
-  # CONSTRUCTORS
-  #####################################
-
   describe "MyStatechart.machine/0" do
     test "returns a `Statechart.Machine.t`" do
       assert %Machine{} = MyStatechart.new()
     end
-  end
-
-  #####################################
-  # REDUCERS
-  #####################################
-
-  describe "Statechart.Machine.transition/1" do
-    test "throws when passed anything but a Machine struct"
-    test "returns an `t:module()` otherwise"
-    test "the returned module contains __statechart_build__/0 function"
-  end
-
-  #####################################
-  # CONVERTERS
-  #####################################
-
-  describe "Statechart.Machine.state/1" do
-    test "throws when passed anything but a Machine struct"
-    test "returns an `t:atom()` otherwise"
-  end
-
-  describe "Statechart.Machine.statechart_module/1" do
-    test "throws when passed anything but a Machine struct"
-    test "returns an `t:module()` otherwise"
-    test "the returned module contains __statechart_build__/0 function"
   end
 
   describe "transition/3" do
