@@ -12,7 +12,14 @@ defmodule Statechart.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+
+      # Tests and Checks
       dialyzer: dialyzer(),
+      test_coverage: [
+        # TODO change this back to 80
+        summary: [threshold: 85],
+        ignore_modules: [~r/Inspect.*/, Statechart.Util.DevOnlyDocs]
+      ],
 
       # Docs
       name: "Statechart",

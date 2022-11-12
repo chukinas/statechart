@@ -41,7 +41,10 @@ jobs:
       run: mix format --check-formatted
 
     - name: Run tests
-      run: mix test --exclude not_implemented
+      run: mix test --exclude not_implemented --cover --export-coverage default
+
+    - name: Run test coverage
+      run: mix test.coverage
 
     - name: Retrieve PLT Cache
       uses: actions/cache@v1
