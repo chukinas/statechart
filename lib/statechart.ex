@@ -29,10 +29,11 @@ defmodule Statechart do
 
   @typedoc """
   This is the name assigned to a state node.
+
+  TODO improve this doc
   """
   @type state :: atom()
 
-  # TODO can/should Node's action type depend on this?
   @type action :: (context() -> context()) | (() -> :ok)
   # TODO shouldn't be term
   @type context :: term

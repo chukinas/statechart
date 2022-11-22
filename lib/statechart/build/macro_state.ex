@@ -39,7 +39,7 @@ defmodule Statechart.Build.MacroState do
     end
   end
 
-  @spec __do__(Macro.Env.t(), Statechart.state(), Node.action_specs(), Keyword.t()) :: :ok
+  @spec __do__(Macro.Env.t(), Statechart.state(), [Node.action_spec()], Keyword.t()) :: :ok
   # LATER make options specific
   def __do__(env, name, action_specs, opts) do
     case AccStep.get(env) do

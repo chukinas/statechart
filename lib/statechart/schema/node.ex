@@ -14,10 +14,7 @@ defmodule Statechart.Schema.Node do
 
   # LATER I have entry and exit hardcoded all over the place. Fix.
   @type action_type :: :entry | :exit
-  # TODO is this already in Statechart?
   @type action_spec :: {action_type, Statechart.action()}
-  # TODO silly type proliferation?
-  @type action_specs :: [action_spec]
 
   typedstruct enforce: true do
     plugin MPTreeNode

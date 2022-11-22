@@ -136,7 +136,7 @@ defmodule Statechart.Schema.Tree do
 
   # LATER I don't like the mismatch between :entry here and :enter in MPTree.
   @spec fetch_transition_path(t, selector, selector) ::
-          {:ok, [{:entry | :exit, Node.t()}]} | :error
+          {:ok, [{Node.action_type(), Node.t()}]} | :error
   def fetch_transition_path(tree, start_selector, end_selector) do
     with {:ok, start_match_fn} <- _to_match_fn(tree, start_selector),
          {:ok, end_match_fn} <- _to_match_fn(tree, end_selector) do
