@@ -14,8 +14,6 @@ defmodule Statechart.Schema.Node do
 
   # LATER I have entry and exit hardcoded all over the place. Fix.
   @type action_type :: :entry | :exit
-  # TODO should rely on the statechart type
-  @type name :: atom()
   # TODO is this already in Statechart?
   @type action_spec :: {action_type, Statechart.action()}
   # TODO silly type proliferation?
@@ -23,7 +21,7 @@ defmodule Statechart.Schema.Node do
 
   typedstruct enforce: true do
     plugin MPTreeNode
-    field :name, name()
+    field :name, Statechart.state()
     field :location, Location.t(), enforce: false
     field :transitions, [Transition.t()], default: []
     field :default, Location.local_id(), enforce: false
@@ -108,10 +106,10 @@ defmodule Statechart.Schema.Node do
     end
   end
 
-  @spec match_name?(t, name()) :: boolean
+  @spec match_name?(t, Statechart.state()) :: boolean
   def match_name?(%__MODULE__{name: node_name}, name), do: node_name == name
 
-  @spec name(t) :: name()
+  @spec name(t) :: Statechart.state()
   def name(%__MODULE__{name: val}), do: val
 
   @spec transitions(t) :: [Transition.t()]

@@ -39,7 +39,7 @@ defmodule Statechart.Build.MacroState do
     end
   end
 
-  @spec __do__(Macro.Env.t(), Node.name(), Node.action_specs(), Keyword.t()) :: :ok
+  @spec __do__(Macro.Env.t(), Statechart.state(), Node.action_specs(), Keyword.t()) :: :ok
   # LATER make options specific
   def __do__(env, name, action_specs, opts) do
     case AccStep.get(env) do
@@ -60,7 +60,7 @@ defmodule Statechart.Build.MacroState do
     :ok
   end
 
-  @spec insert_node(Macro.Env.t(), Node.name(), [Node.action_spec()]) :: Macro.Env.t()
+  @spec insert_node(Macro.Env.t(), Statechart.state(), [Node.action_spec()]) :: Macro.Env.t()
   def insert_node(env, name, action_specs) do
     schema = AccSchema.get(env)
 
@@ -106,7 +106,7 @@ defmodule Statechart.Build.MacroState do
   end
 
   # LATER I don't like that this is the same name
-  @spec insert_default(Schema.t(), Node.t(), Node.name()) :: Schema.t()
+  @spec insert_default(Schema.t(), Node.t(), Statechart.state()) :: Schema.t()
   def insert_default(schema, origin_node, target_name) do
     if Node.leaf?(origin_node) do
       raise StatechartError, "cannot assign a default to a leaf node"
@@ -145,7 +145,7 @@ defmodule Statechart.Build.MacroState do
     Schema.put_tree(schema, new_tree)
   end
 
-  @spec validate_name!(Schema.t(), Node.name()) :: :ok | no_return
+  @spec validate_name!(Schema.t(), Statechart.state()) :: :ok | no_return
   defp validate_name!(schema, name) do
     case schema |> Schema.tree() |> Tree.fetch_node([:local, name: name]) do
       {:ok, node_with_same_name} ->

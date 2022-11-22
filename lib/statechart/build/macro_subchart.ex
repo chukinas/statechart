@@ -38,7 +38,7 @@ defmodule Statechart.Build.MacroSubchart do
     end
   end
 
-  @spec __do__(Macro.Env.t(), Node.name(), module(), Keyword.t()) :: :ok
+  @spec __do__(Macro.Env.t(), Statechart.state(), module(), Keyword.t()) :: :ok
   def __do__(env, name, module, opts) do
     case AccStep.get(env) do
       :insert_nodes -> MacroState.insert_node(env, name, opts)

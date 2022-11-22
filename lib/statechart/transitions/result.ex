@@ -10,7 +10,7 @@ defmodule Statechart.Transitions.Result do
 
   typedstruct do
     field :local_id, Location.local_id()
-    field :state_name, Node.name()
+    field :state_name, Statechart.state()
     field :context, term()
   end
 

@@ -26,7 +26,12 @@ defmodule Statechart do
   @opaque local_id :: Location.local_id()
   @opaque t :: t(term)
   @type event :: term()
-  @type state :: term()
+
+  @typedoc """
+  This is the name assigned to a state node.
+  """
+  @type state :: atom()
+
   # TODO can/should Node's action type depend on this?
   @type action :: (context() -> context()) | (() -> :ok)
   # TODO shouldn't be term
@@ -193,7 +198,7 @@ defmodule Statechart do
 
   #{MacroOpts.docs(:state)}
   """
-  # defmacro state(name, opts, do_block)
+  @spec state(state(), term(), term()) :: term
   defmacro state(name, opts, do_block)
   defmacro state(name, opts, do: block), do: MacroState.build_ast(name, opts, block)
 

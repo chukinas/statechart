@@ -28,7 +28,7 @@ defmodule Statechart.Build.MacroTransition do
     end
   end
 
-  @spec __do__(Macro.Env.t(), Event.t(), Node.name()) :: :ok
+  @spec __do__(Macro.Env.t(), Event.t(), Statechart.state()) :: :ok
   def __do__(env, event, target_name) do
     case AccStep.get(env) do
       :insert_transitions_and_defaults -> insert_transition(env, event, target_name)
@@ -36,7 +36,7 @@ defmodule Statechart.Build.MacroTransition do
     end
   end
 
-  @spec insert_transition(Macro.Env.t(), Event.t(), Node.name()) :: :ok
+  @spec insert_transition(Macro.Env.t(), Event.t(), Statechart.state()) :: :ok
   defp insert_transition(env, event, target_name) do
     schema = AccSchema.get(env)
     tree = Schema.tree(schema)

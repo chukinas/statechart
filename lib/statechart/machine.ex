@@ -142,7 +142,7 @@ defmodule Statechart.Machine do
   @doc """
   Get the machine's current state.
   """
-  @spec state(t()) :: Node.name()
+  @spec state(t()) :: Statechart.state()
   def state(%__MODULE__{current_local_id: local_id} = machine) do
     machine
     |> __schema__
@@ -154,7 +154,7 @@ defmodule Statechart.Machine do
   @spec context(t(context)) :: context when context: var
   def context(%__MODULE__{context: val}), do: val
 
-  @spec states(t) :: [Node.name()]
+  @spec states(t) :: [Statechart.state()]
   def states(%__MODULE__{statechart_module: module, current_local_id: local_id}) do
     nodes =
       module.__tree__()
