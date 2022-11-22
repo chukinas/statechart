@@ -34,8 +34,10 @@ defmodule Statechart do
   """
   @type state :: atom()
 
+  @typedoc """
+  TODO write about action
+  """
   @type action :: (context() -> context()) | (() -> :ok)
-  # TODO shouldn't be term
   @type context :: term
 
   defmacro __using__(_opts) do
@@ -106,13 +108,6 @@ defmodule Statechart do
   #{MacroOpts.docs(:statechart)}
   """
 
-  # TODO remove on macro
-  # TODO update CHANGELOG
-  # TODO update docs
-  # TODO add tests
-  # TODO kill off old tests
-  # TODO update commit message
-
   @doc section: :build
   defmacro statechart(opts, do_block)
   defmacro statechart(opts, do: block), do: MacroChart.build_ast(:statechart, opts, block)
@@ -179,8 +174,6 @@ defmodule Statechart do
       end
 
 
-  TODO remove this as an option. It's confusing. Raise if any unacceptable options are passed.
-  TODO add a test to make sure the behavior is rebuffed
   TODO remove the IO.inspect from example to make finding roque IO.inspect calls easier
 
   arity-2 (name and opts and do-block)
@@ -199,7 +192,7 @@ defmodule Statechart do
 
   #{MacroOpts.docs(:state)}
   """
-  @spec state(state(), term(), term()) :: term
+  @spec state(state(), Keyword.t(), term()) :: term
   defmacro state(name, opts, do_block)
   defmacro state(name, opts, do: block), do: MacroState.build_ast(name, opts, block)
 
@@ -209,10 +202,8 @@ defmodule Statechart do
   See `state/3` for details
   """
   @doc section: :build
-  # TODO fix docs (statechart 1, 2)
-  # TODO clean up docs for the two state arities
   # TODO rearrange functions to be in same order as docs
-  @spec state(state(), term()) :: term
+  @spec state(state(), Keyword.t() | term()) :: term
   defmacro state(name, opts_or_do_block \\ [])
   defmacro state(name, do: block), do: MacroState.build_ast(name, [], block)
   defmacro state(name, opts), do: MacroState.build_ast(name, opts, nil)

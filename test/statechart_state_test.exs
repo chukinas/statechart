@@ -73,7 +73,6 @@ defmodule Statechart.StateTest do
     end
   end
 
-  # TODO group with next
   describe "Statechart.state/X :default option" do
     test "must not be given to leaf node" do
       assert_raise StatechartError, ~r/cannot assign a default to a leaf/, fn ->
