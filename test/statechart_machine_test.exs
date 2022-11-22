@@ -2,11 +2,12 @@ defmodule Statechart.MachineTest do
   # Even though this module references Statechart.Machine,
   # it's testing the Statechart API, which delegates out to it.
 
-  use ExUnit.Case
+  use Statechart.Case
   use Statechart
   alias Statechart.Machine
 
   def print_notice(_), do: IO.puts("Exiting the light cycle")
+
   # LATER introduce subchart
   subchart_new module: LightCycle,
                default: :red,
@@ -23,6 +24,7 @@ defmodule Statechart.MachineTest do
       subchart :on, LightCycle, do: :TOGGLE_POWER >>> :off
     end
 
+    # LATER: be able to define functions inside statechart block
     # CONVENIENCE FUNCTIONS FOR TESTS
     def at(:off), do: new()
     def at(:red), do: new() |> Statechart.trigger(:TOGGLE_POWER)
@@ -53,58 +55,30 @@ defmodule Statechart.MachineTest do
     end
   end
 
-  defmodule Sample do
-    use Statechart
-
-    statechart default: :d do
-      state :a do
-        state :b do
-          :GOTO_G >>> :g
-
-          state :c do
-            state :d do
-            end
-          end
-        end
-      end
-
-      state :e do
-        state :f do
-          state :g do
-          end
-        end
-      end
-    end
-  end
-
   describe "MyStatechart.machine/0" do
     test "returns a `Statechart.Machine.t`" do
       assert %Machine{} = MyStatechart.new()
     end
   end
 
-  describe "transition/3" do
-    defmodule SimpleToggle do
-      use Statechart
+  describe "trigger/3" do
+    statechart module: SimpleToggle, default: :on do
+      :GLOBAL_TURN_ON >>> :on
+      :GLOBAL_TURN_OFF >>> :off
 
-      statechart default: :on do
-        :GLOBAL_TURN_ON >>> :on
-        :GLOBAL_TURN_OFF >>> :off
+      state :on do
+        :TOGGLE >>> :off
+        :LOCAL_TURN_OFF >>> :off
+      end
 
-        state :on do
-          :TOGGLE >>> :off
-          :LOCAL_TURN_OFF >>> :off
-        end
-
-        state :off do
-          :TOGGLE >>> :on
-          :LOCAL_TURN_ON >>> :on
-        end
+      state :off do
+        :TOGGLE >>> :on
+        :LOCAL_TURN_ON >>> :on
       end
     end
 
     test "a transition registered directly on current node allows a transition" do
-      assert [:off] == SimpleToggle.new() |> Statechart.trigger(:TOGGLE) |> Statechart.states()
+      SimpleToggle.new() |> Statechart.trigger(:TOGGLE) |> assert_state(:off)
     end
 
     # LATER log messages about non-existent events
@@ -128,10 +102,6 @@ defmodule Statechart.MachineTest do
       toggle_after_non_local_event = Statechart.trigger(toggle, :LOCAL_TURN_ON)
       assert [:on] == Statechart.states(toggle_after_non_local_event)
       assert :error == Statechart.last_event_status(toggle_after_non_local_event)
-    end
-
-    defp assert_state(machine, expected_state) do
-      assert Statechart.in_state?(machine, expected_state)
     end
 
     test "a transition registered earlier in a node's path still allows an event" do
