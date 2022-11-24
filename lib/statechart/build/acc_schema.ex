@@ -10,13 +10,10 @@ defmodule Statechart.Build.AccSchema do
   #####################################
   # REDUCERS
 
-  # TODO remove the __statechart_schema__
-
   @spec init(Macro.Env.t(), Schema.t()) :: Macro.Env.t()
   def init(env, %Schema{} = schema) do
     {:ok, pid} = Agent.start_link(fn -> schema end)
     :ok = Module.put_attribute(env.module, :__statechart_schema_pid__, pid)
-    :ok = Module.put_attribute(env.module, :__statechart_schema__, schema)
     env
   end
 
@@ -30,7 +27,6 @@ defmodule Statechart.Build.AccSchema do
   def put_tree(env, %MPTree{} = tree) do
     new_schema = env |> get |> Schema.put_tree(tree)
     env |> pid |> Agent.update(fn _ -> new_schema end)
-    :ok = Module.put_attribute(env.module, :__statechart_schema__, new_schema)
     env
   end
 
@@ -43,7 +39,6 @@ defmodule Statechart.Build.AccSchema do
 
   @spec get(Macro.Env.t()) :: Schema.t()
   def get(env) do
-    %Schema{} = Module.get_attribute(env.module, :__statechart_schema__)
     %Schema{} = env |> pid |> Agent.get(& &1)
   end
 
