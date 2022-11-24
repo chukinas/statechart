@@ -51,7 +51,7 @@ defmodule Statechart.MixProject do
     ]
   end
 
-  defp elixirc_paths(env) when env in ~w/test/a, do: ["lib", "test/support"]
+  defp elixirc_paths(env) when env in ~w/test/a, do: ["lib", "test/support", "experiment"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
