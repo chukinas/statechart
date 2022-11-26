@@ -38,9 +38,16 @@ defmodule Statechart.Experiment1Test do
     assert 1 = E.BeforeCompile.result()
   end
 
+  # TODO need to stop the AccSchema Agent
+
   test "before compile full" do
-    assert [8] = E.BeforeCompileFull.result()
-    assert [8] = E.BeforeCompileFull.result()
+    assert 4 = E.BeforeCompileFull.result()
+  end
+
+  test "named funs" do
+    E.NamedFuns.unordered_funs()
+    assert [8] = E.NamedFuns.result()
+    assert [8] = E.NamedFuns.result()
   end
 
   test "attr" do

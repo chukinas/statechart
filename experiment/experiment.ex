@@ -70,9 +70,9 @@ defmodule Statechart.Experiment.BeforeCompileFull do
   import __MODULE__.Macros
 
   start do
+    # push_function(&(&1 * 2))
     push_function(fn x -> x + 3 end)
-    push_function(&(&1 * 2))
-    push_function(&List.wrap/1)
+    # push_function(&List.wrap/1)
   end
 end
 
@@ -90,5 +90,23 @@ defmodule Statechart.Experiment.Attrs do
   def result do
     @functions
     |> Enum.reduce(@start_val, & &1.(&2))
+  end
+end
+
+defmodule Statechart.Experiment.NamedFuns do
+  @moduledoc """
+  This is finally the right solution.
+  The functions need Macro.escape.
+  I accumulate using an Agent whose pid is assigned to a module attr.
+  In a before-compile callback then I grab the accumulate val from the Agent,
+  then kill the agent and the module attr,
+  then simply interpolate the finished data structure into an injected function.
+  """
+  import __MODULE__.Macros
+
+  start do
+    push_function("anon", fn x -> x + 3 end)
+    push_function("capture", &(&1 * 2))
+    push_function("&Mod.fun/arity", &List.wrap/1)
   end
 end
