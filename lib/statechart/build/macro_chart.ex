@@ -150,6 +150,7 @@ defmodule Statechart.Build.MacroChart do
       |> Macro.escape()
       |> Macro.prewalk(AccFunctions.prewalk_substitution_fn(env))
 
+    AccFunctions.stop(env)
     AccNodeStack.clean_up(env)
 
     quote do

@@ -9,6 +9,8 @@ defmodule Statechart.SubchartTest do
       end
     end
 
+    # TODO need to kill the accfunctions process
+
     test "for a subchart root having actions declared at both the subchart and parent levels" do
       defmodule SubchartRootActionsBothLocalAndFromParent do
         use Statechart

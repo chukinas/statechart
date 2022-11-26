@@ -57,6 +57,12 @@ defmodule Statechart.Build.AccFunctions do
     end
   end
 
+  # TODO Do I have to use Agent or can I just use mod attr?
+
+  def stop(env) do
+    env |> pid |> Agent.stop()
+  end
+
   def prewalk_substitution_fn(env) do
     fn
       {:__statechart_function__, fn_id} -> get_by_fn_id!(env, fn_id)
