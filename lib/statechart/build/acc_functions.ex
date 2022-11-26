@@ -37,14 +37,30 @@ defmodule Statechart.Build.AccFunctions do
     Module.get_attribute(env.module, :__statechart_functions_pid__)
   end
 
+  defp get_all(env) do
+    env |> pid |> Agent.get(& &1)
+  end
+
   @spec get_by_fn_id!(Macro.Env.t(), fn_id) :: fn_ast
   def get_by_fn_id!(env, fn_id) do
-    Agent.get(
-      env |> pid,
-      &Enum.find_value(&1, fn
-        {^fn_id, fn_ast} -> fn_ast
-        _ -> nil
-      end)
-    )
+    case env
+         |> get_all
+         |> Enum.find_value(fn
+           {^fn_id, fn_ast} -> fn_ast
+           _ -> nil
+         end) do
+      nil ->
+        raise "#{inspect(pid(env))} expected to find a fn assoc with #{fn_id} in #{inspect(get_all(env))}, but found none"
+
+      fn_ast ->
+        fn_ast
+    end
+  end
+
+  def prewalk_substitution_fn(env) do
+    fn
+      {:__statechart_function__, fn_id} -> get_by_fn_id!(env, fn_id)
+      other -> other
+    end
   end
 end

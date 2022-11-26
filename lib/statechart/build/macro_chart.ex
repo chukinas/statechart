@@ -24,11 +24,11 @@ defmodule Statechart.Build.MacroChart do
         @before_compile MacroChart
         MacroChart.__ensure_only_one_statechart_per_module__()
         MacroChart.__inject_context__(unquote(opts[:context]))
+        AccFunctions.init(__ENV__)
 
         MacroChart.__ensure_dsl_macros_can_only_be_called_within_statechart_ do
           AccStep.foreach do
             AccNodeStack.init(__ENV__)
-            AccFunctions.init(__ENV__)
 
             MacroChart.__do__(
               __ENV__,
@@ -111,8 +111,8 @@ defmodule Statechart.Build.MacroChart do
   defp init_schema(env, chart_type, actions) do
     add_actions_fn =
       &Enum.reduce(actions, &1, fn {action_type, action}, root ->
-        _placeholder = AccFunctions.put_and_get_placeholder(env, action)
-        Node.add_action(root, action_type, action)
+        placeholder = AccFunctions.put_and_get_placeholder(env, action)
+        Node.add_action(root, action_type, placeholder)
       end)
 
     schema =
@@ -144,14 +144,19 @@ defmodule Statechart.Build.MacroChart do
   end
 
   defmacro internal_api(env) do
-    schema = AccSchema.get(env)
+    schema =
+      env
+      |> AccSchema.get()
+      |> Macro.escape()
+      |> Macro.prewalk(AccFunctions.prewalk_substitution_fn(env))
+
     AccNodeStack.clean_up(env)
 
     quote do
       alias Statechart.Machine
 
       @spec __schema__ :: Schema.t()
-      def __schema__, do: unquote(Macro.escape(schema))
+      def __schema__, do: unquote(schema)
 
       @spec __tree__ :: Tree.t()
       def __tree__ do
