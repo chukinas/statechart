@@ -1,6 +1,4 @@
 defmodule Statechart.Case do
-  # TODO make sure not part of docs
-
   use ExUnit.CaseTemplate
 
   # LATER maybe these two clauses should be separate macros/functions

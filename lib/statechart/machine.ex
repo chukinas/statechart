@@ -110,6 +110,7 @@ defmodule Statechart.Machine do
 
   With the machine now available
   """
+  # TODO is transition used anywhere?
   @spec transition(t, event()) :: t
   def transition(%__MODULE__{} = machine, event) do
     schema = __schema__(machine)
@@ -122,8 +123,9 @@ defmodule Statechart.Machine do
              local_id: destination_local_id
            ) do
       _context =
-        Enum.reduce(actions, machine.context, fn action, context ->
-          action.(context)
+        Enum.reduce(actions, machine.context, fn
+          action, _context when is_function(action, 0) -> action.()
+          action, context when is_function(action, 1) -> action.(context)
         end)
 
       struct!(machine, last_event_status: :ok, current_local_id: destination_local_id)

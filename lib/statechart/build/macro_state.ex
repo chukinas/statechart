@@ -31,7 +31,7 @@ defmodule Statechart.Build.MacroState do
         MacroState.__do__(
           __ENV__,
           unquote(name),
-          unquote(Keyword.take(opts, ~w/entry exit/a)),
+          unquote(Keyword.take(opts, ~w/entry exit/a) |> Macro.escape()),
           unquote(opts)
         )
 
