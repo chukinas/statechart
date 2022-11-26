@@ -17,56 +17,33 @@ defmodule Statechart.Build.AccFunctions do
 
   @spec init(Macro.Env.t()) :: Macro.Env.t()
   def init(env) do
-    {:ok, pid} = Agent.start_link(fn -> [] end)
-    :ok = Module.put_attribute(env.module, :__statechart_functions_pid__, pid)
+    :ok = Module.register_attribute(env.module, :__statechart_functions__, accumulate: true)
     env
   end
 
   @spec put_and_get_placeholder(Macro.Env.t(), Macro.t()) :: placeholder
-  def put_and_get_placeholder(env, function_ast) do
+  def put_and_get_placeholder(env, {_, _, _} = function_ast) do
     fn_id = System.unique_integer()
     placeholder = {:__statechart_function__, fn_id}
-    env |> pid |> Agent.update(&[{fn_id, function_ast} | &1])
+    Module.put_attribute(env.module, :__statechart_functions__, {fn_id, function_ast})
     placeholder
   end
 
   #####################################
   # CONVERTERS
 
-  defp pid(env) do
-    Module.get_attribute(env.module, :__statechart_functions_pid__)
-  end
-
-  defp get_all(env) do
-    env |> pid |> Agent.get(& &1)
-  end
-
-  @spec get_by_fn_id!(Macro.Env.t(), fn_id) :: fn_ast
-  def get_by_fn_id!(env, fn_id) do
-    case env
-         |> get_all
-         |> Enum.find_value(fn
-           {^fn_id, fn_ast} -> fn_ast
-           _ -> nil
-         end) do
-      nil ->
-        raise "#{inspect(pid(env))} expected to find a fn assoc with #{fn_id} in #{inspect(get_all(env))}, but found none"
-
-      fn_ast ->
-        fn_ast
-    end
-  end
-
-  # TODO Do I have to use Agent or can I just use mod attr?
-
-  def stop(env) do
-    env |> pid |> Agent.stop()
-  end
-
-  def prewalk_substitution_fn(env) do
+  def prewalk_substitution_fn(%Macro.Env{module: module}) do
     fn
-      {:__statechart_function__, fn_id} -> get_by_fn_id!(env, fn_id)
-      other -> other
+      {:__statechart_function__, fn_id} ->
+        module
+        |> Module.get_attribute(:__statechart_functions__)
+        |> Enum.find_value(fn
+          {^fn_id, fn_ast} -> fn_ast
+          _ -> nil
+        end)
+
+      other ->
+        other
     end
   end
 end

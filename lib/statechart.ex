@@ -28,9 +28,7 @@ defmodule Statechart do
   @type event :: term()
 
   @typedoc """
-  This is the name assigned to a state node.
-
-  TODO improve this doc
+  Name assigned to a state node.
   """
   @type state :: atom()
 
@@ -55,6 +53,67 @@ defmodule Statechart do
       require AccStep
     end
   end
+
+  @doc section: :build
+  @doc """
+  Create a statechart node.
+
+  See `state/3`
+
+  Examples
+
+  arity-1 (name only)
+
+      statechart do
+        state :my_only_state
+      end
+
+  arity-2 (name and opts)
+
+      statechart do
+        state :state_with_opts, entry: fn -> IO.inspect "hello!" end
+                                exit: fn -> IO.inspect "bye" end
+      end
+
+  arity-2 (name and do block)
+
+      statechart do
+        state :parent_state do
+          state :child_state
+        end
+      end
+
+
+  arity-2 (name and opts and do-block)
+
+      statechart do
+        state :parent_state, entry: fn -> IO.inspect "hello!" end
+                                exit: fn -> IO.inspect "bye" end
+                                do: state :child_state
+        end
+      end
+
+  `name` must be an atom and must be unique amongst nodes defined in this
+  module's statechart.
+  The way to have multiple nodes sharing the same name is to define statechart
+  partials in separate module and then insert those partials into a parent statechart.
+
+  #{MacroOpts.docs(:state)}
+  """
+  @spec state(state(), Keyword.t(), term()) :: term
+  defmacro state(name, opts, do_block)
+  defmacro state(name, opts, do: block), do: MacroState.build_ast(name, opts, block)
+
+  @doc """
+  Create a statechart node.
+
+  See `state/3` for details
+  """
+  @doc section: :build
+  @spec state(state(), Keyword.t() | term()) :: term
+  defmacro state(name, opts_or_do_block \\ [])
+  defmacro state(name, do: block), do: MacroState.build_ast(name, [], block)
+  defmacro state(name, opts), do: MacroState.build_ast(name, opts, nil)
 
   @doc section: :build
   @doc """
@@ -122,6 +181,19 @@ defmodule Statechart do
 
   defmacro statechart(do: block), do: MacroChart.build_ast(:statechart, [], block)
   defmacro statechart(opts), do: MacroChart.build_ast(:statechart, opts, nil)
+
+  # FutureFeature
+  @doc false
+  # Inject a chart defined in another module.
+  # ## `StatechartError` raised when...
+  # - `subchart/2` is passed anything besides the name of a module that containing a `statechart/2` call
+  # - `state/2` is called outside of a `statechart` block
+  defmacro subchart(name, module, opts \\ [], do_block \\ [do: nil])
+
+  defmacro subchart(name, module, opts, do: block) do
+    MacroSubchart.build_ast(name, module, opts, block)
+  end
+
   # LATER rename to subchart, add doc, and make public
   # have to then remove the current subchart and absorb its functionality into `state`
   _doc = """
@@ -143,83 +215,6 @@ defmodule Statechart do
 
   @doc false
   defmacro subchart_new(opts, block), do: MacroChart.build_ast(:subchart, opts, block)
-
-  @doc section: :build
-  @doc """
-  Create a statechart node.
-
-  See `state/3`
-
-  Examples
-
-  arity-1 (name only)
-
-      statechart do
-        state :my_only_state
-      end
-
-  arity-2 (name and opts)
-
-      statechart do
-        state :state_with_opts, entry: fn -> IO.inspect "hello!" end
-                                exit: fn -> IO.inspect "bye" end
-      end
-
-  arity-2 (name and do block)
-
-      statechart do
-        state :parent_state do
-          state :child_state
-        end
-      end
-
-
-  TODO remove the IO.inspect from example to make finding roque IO.inspect calls easier
-
-  arity-2 (name and opts and do-block)
-
-      statechart do
-        state :parent_state, entry: fn -> IO.inspect "hello!" end
-                                exit: fn -> IO.inspect "bye" end
-                                do: state :child_state
-        end
-      end
-
-  `name` must be an atom and must be unique amongst nodes defined in this
-  module's statechart.
-  The way to have multiple nodes sharing the same name is to define statechart
-  partials in separate module and then insert those partials into a parent statechart.
-
-  #{MacroOpts.docs(:state)}
-  """
-  @spec state(state(), Keyword.t(), term()) :: term
-  defmacro state(name, opts, do_block)
-  defmacro state(name, opts, do: block), do: MacroState.build_ast(name, opts, block)
-
-  @doc """
-  Create a statechart node.
-
-  See `state/3` for details
-  """
-  @doc section: :build
-  # TODO rearrange functions to be in same order as docs
-  @spec state(state(), Keyword.t() | term()) :: term
-  defmacro state(name, opts_or_do_block \\ [])
-  defmacro state(name, do: block), do: MacroState.build_ast(name, [], block)
-  defmacro state(name, opts), do: MacroState.build_ast(name, opts, nil)
-
-  # FutureFeature
-  @doc false
-  # Inject a chart defined in another module.
-  # ## `StatechartError` raised when...
-  # - `subchart/2` is passed anything besides the name of a module that containing a `statechart/2` call
-  # - `state/2` is called outside of a `statechart` block
-  defmacro subchart(name, module, opts \\ [], do_block \\ [do: nil])
-
-  defmacro subchart(name, module, opts, do: block) do
-    MacroSubchart.build_ast(name, module, opts, block)
-  end
-
   @doc section: :build
   @doc """
   Register a transtion from an event and target state.
@@ -233,6 +228,13 @@ defmodule Statechart do
   defmacro event >>> target_state do
     MacroTransition.build_ast(event, target_state)
   end
+
+  @doc section: :manipulate
+  @doc """
+  Get current context data.
+  """
+  @spec context(t(context)) :: context when context: var
+  defdelegate context(statechart), to: Machine
 
   @doc false
   defmacro root() do
@@ -248,20 +250,6 @@ defmodule Statechart do
 
   @doc section: :manipulate
   @doc """
-  Get current context data.
-  """
-  @spec context(t(context)) :: context when context: var
-  defdelegate context(statechart), to: Machine
-
-  @doc section: :manipulate
-  @doc """
-  Get the current compound state
-  """
-  @spec states(t) :: [state]
-  defdelegate states(statechart), to: Machine, as: :states
-
-  @doc section: :manipulate
-  @doc """
   Determine if the given state is in the given compound state
   """
   @spec in_state?(t, state) :: boolean
@@ -273,4 +261,11 @@ defmodule Statechart do
   """
   @spec last_event_status(t) :: :ok | :error
   defdelegate last_event_status(statechart), to: Machine
+
+  @doc section: :manipulate
+  @doc """
+  Get the current compound state
+  """
+  @spec states(t) :: [state]
+  defdelegate states(statechart), to: Machine, as: :states
 end

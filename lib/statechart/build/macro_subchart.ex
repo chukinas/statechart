@@ -32,7 +32,13 @@ defmodule Statechart.Build.MacroSubchart do
       )
 
       AccNodeStack.node_stack do
-        MacroSubchart.__do__(__ENV__, unquote(name), unquote(module), unquote(opts))
+        MacroSubchart.__do__(
+          __ENV__,
+          unquote(name),
+          unquote(module),
+          unquote(opts |> Macro.escape())
+        )
+
         unquote(block)
       end
     end

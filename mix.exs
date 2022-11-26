@@ -16,8 +16,7 @@ defmodule Statechart.MixProject do
       # Tests and Checks
       dialyzer: dialyzer(),
       test_coverage: [
-        # TODO change this back to 80
-        summary: [threshold: 85],
+        summary: [threshold: 80],
         ignore_modules: [~r/Inspect.*/, Statechart.Util.DevOnlyDocs]
       ],
 

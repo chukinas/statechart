@@ -5,7 +5,7 @@ defmodule Statechart.SubchartTest do
   describe "blarg" do
     test "`on :exit` is valid at root level of subchart" do
       statechart_test_module do
-        subchart_new exit: &IO.inspect/1
+        subchart_new exit: fn -> "this will never get called" end
       end
     end
 

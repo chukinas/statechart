@@ -38,8 +38,6 @@ defmodule Statechart.Experiment1Test do
     assert 1 = E.BeforeCompile.result()
   end
 
-  # TODO need to stop the AccSchema Agent
-
   test "before compile full" do
     assert 4 = E.BeforeCompileFull.result()
   end

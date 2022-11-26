@@ -110,9 +110,8 @@ defmodule Statechart.Machine do
 
   With the machine now available
   """
-  # TODO is transition used anywhere?
-  @spec transition(t, event()) :: t
-  def transition(%__MODULE__{} = machine, event) do
+  @spec trigger(t, event()) :: t
+  def trigger(%__MODULE__{} = machine, event) do
     schema = __schema__(machine)
     origin_local_id = machine.current_local_id
 
@@ -132,10 +131,6 @@ defmodule Statechart.Machine do
     else
       _ -> put_in(machine.last_event_status, :error)
     end
-  end
-
-  def trigger(machine, event) do
-    transition(machine, event)
   end
 
   #####################################
