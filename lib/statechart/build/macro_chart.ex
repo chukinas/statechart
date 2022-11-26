@@ -33,7 +33,7 @@ defmodule Statechart.Build.MacroChart do
             MacroChart.__do__(
               __ENV__,
               unquote(schema_type),
-              unquote(Keyword.take(opts, [:entry, :exit, :default]))
+              unquote(Keyword.take(opts, [:entry, :exit, :default]) |> Macro.escape())
             )
 
             import Statechart

@@ -58,7 +58,8 @@ defmodule Statechart.Schema.Node do
   @spec add_action(t, action_type(), term) :: t
   def add_action(%__MODULE__{actions: actions} = node, action_type, fun)
       when action_type in ~w/entry exit/a do
-    struct!(node, actions: [{action_type, fun} | actions])
+    new_actions = actions ++ [{action_type, fun}]
+    struct!(node, actions: new_actions)
   end
 
   @spec validate_set_default(t, Location.local_id()) :: {:ok, t} | :error

@@ -83,18 +83,16 @@ defmodule Statechart.StatechartTest do
       mod.new() |> assert_context([])
     end
 
-    # TODO reimplement
-    # test "can take the form &(&1 + 1)" do
-    #   defmodule BlargMaster do
-    #     statechart context: {integer, 0},
-    #                # entry: &List.wrap/1,
-    #                # entry: &(1 + &1),
-    #                # entry: &(&1 / 1),
-    #                entry: fn int -> int + 1 end
-    #   end
+    test "can take the form &(&1 + 1) or &Mod.fun/arity or fn _ -> _ end" do
+      statechart_test_module mod do
+        statechart context: {integer, 0},
+                   entry: fn int -> int + 1 end,
+                   entry: &(&1 * 3),
+                   entry: &List.wrap/1
+      end
 
-    #   BlargMaster.new() |> assert_context([])
-    # end
+      mod.new() |> assert_context([3])
+    end
   end
 
   test "Statechart.statechart/1 :exit option raises" do
