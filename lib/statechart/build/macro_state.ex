@@ -5,6 +5,7 @@ defmodule Statechart.Build.MacroState do
     """
 
   alias __MODULE__
+  alias Statechart.Build.AccFunctions
   alias Statechart.Build.AccNodeStack
   alias Statechart.Build.AccSchema
   alias Statechart.Build.AccStep
@@ -76,7 +77,10 @@ defmodule Statechart.Build.MacroState do
     new_node =
       action_specs
       |> Keyword.take(~w/entry exit/a)
-      |> Enum.reduce(new_node, fn {type, action}, node -> Node.add_action(node, type, action) end)
+      |> Enum.reduce(new_node, fn {type, action}, node ->
+        placeholder = AccFunctions.put_and_get_placeholder(env, action)
+        Node.add_action(node, type, placeholder)
+      end)
 
     new_tree =
       case Tree.validate_insert(schema.tree, new_node, local_id: AccNodeStack.parent_local_id(env)) do
