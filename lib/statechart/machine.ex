@@ -66,11 +66,17 @@ defmodule Statechart.Machine do
 
   @type action(context) :: (context -> context)
 
-  @spec starting_context(context, [action(context)]) :: context when context: var
-  def starting_context(context, []), do: context
+  # TODO add a test to test arity-0 fns on init
 
-  def starting_context(context, [action | rest]) do
-    starting_context(action.(context), rest)
+  defp apply_actions(initial_context, actions) do
+    Enum.reduce(actions, initial_context, fn
+      action, context when is_function(action, 0) ->
+        action.()
+        context
+
+      action, context when is_function(action, 1) ->
+        action.(context)
+    end)
   end
 
   @doc false
@@ -79,7 +85,7 @@ defmodule Statechart.Machine do
     %Schema{} = schema = statechart_module.__schema__()
     start_local_id = Schema.starting_local_id(schema)
     actions = Schema.fetch_init_actions!(schema, local_id: start_local_id)
-    context = starting_context(init_context, actions)
+    context = apply_actions(init_context, actions)
 
     %__MODULE__{
       statechart_module: statechart_module,
@@ -121,13 +127,11 @@ defmodule Statechart.Machine do
            Schema.fetch_actions(schema, [local_id: origin_local_id],
              local_id: destination_local_id
            ) do
-      _context =
-        Enum.reduce(actions, machine.context, fn
-          action, _context when is_function(action, 0) -> action.()
-          action, context when is_function(action, 1) -> action.(context)
-        end)
-
-      struct!(machine, last_event_status: :ok, current_local_id: destination_local_id)
+      struct!(machine,
+        last_event_status: :ok,
+        current_local_id: destination_local_id
+      )
+      |> Map.update!(:context, &apply_actions(&1, actions))
     else
       _ -> put_in(machine.last_event_status, :error)
     end

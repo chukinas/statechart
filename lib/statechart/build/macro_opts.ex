@@ -15,11 +15,15 @@ defmodule Statechart.Build.MacroOpts do
   def __doc_keys__,
     do: %{
       default:
-        "name of a child node to auto-transition to when this node is targeted. Required for any non-leaf node.",
-      entry: "an `t:action/0` to be executed when this node is entered",
-      exit: "an `t:action/0` to be executed when this node is exited",
-      context: "expects a tuple whose second element is `t:context/0` and the first is its type",
-      module: "nests the chart in module of the given name"
+        "name of a child node to auto-transition to when this node is targeted. Required for any non-leaf node. (see [Defaults](#module-defaults))",
+      entry:
+        "an `t:action/0` to be executed when this node is entered (see [Actions](#module-actions))",
+      exit:
+        "an `t:action/0` to be executed when this node is exited (see [Actions](#module-actions))",
+      context:
+        "expects a tuple whose second element is `t:context/0` and the first is its type (see [Actions](#module-actions))",
+      module:
+        "nests the chart in a submodule of the given name (see [Submodules](#module-submodules))"
     }
 
   @type macro :: :statechart | :state | :subchart

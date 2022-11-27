@@ -26,15 +26,7 @@ defmodule Statechart do
   @opaque local_id :: Location.local_id()
   @opaque t :: t(term)
   @type event :: term()
-
-  @typedoc """
-  Name assigned to a state node.
-  """
   @type state :: atom()
-
-  @typedoc """
-  TODO write about action
-  """
   @type action :: (context() -> context()) | (() -> :ok)
   @type context :: term
 
@@ -57,8 +49,6 @@ defmodule Statechart do
   @doc section: :build
   @doc """
   Create a statechart node.
-
-  See `state/3`
 
   Examples
 
@@ -84,16 +74,15 @@ defmodule Statechart do
       end
 
 
-  arity-2 (name and opts and do-block)
-
+  arity-3 (name and opts and do-block)
       statechart do
-        state :parent_state, entry: fn -> IO.inspect "hello!" end
-                                exit: fn -> IO.inspect "bye" end
-                                do: state :child_state
+        state :parent_state,
+          entry: fn -> IO.inspect("hello!") end,
+          exit: fn -> IO.inspect("bye") end do
+          state :child_state
         end
       end
 
-  `name` must be an atom and must be unique amongst nodes defined in this
   module's statechart.
   The way to have multiple nodes sharing the same name is to define statechart
   partials in separate module and then insert those partials into a parent statechart.
@@ -118,7 +107,6 @@ defmodule Statechart do
   @doc section: :build
   @doc """
   Create and register a statechart to this module.
-  May only be used once per module.
 
   ```
   defmodule ToggleStatechart do
@@ -130,40 +118,6 @@ defmodule Statechart do
     end
   end
   ```
-
-  `statechart/2` accepts a `:module` option.
-  In the below example,
-  the module containing the statechart is `Toggle.Statechart`
-  ```
-  defmodule Toggle do
-    use Statechart
-
-    statechart module: Statechart do
-      state :on, default: true, do: :TOGGLE >>> :off
-      state :off, do: :TOGGLE >>> :on
-    end
-  end
-  ```
-
-  In this way, many statecharts may be declared easily in one file:
-  ```
-  defmodule MyApp.Statechart do
-    use Statechart
-
-    # module: MyApp.Statechart.Toggle
-    statechart module: Toggle do
-      state :on, default: true, do: :TOGGLE >>> :off
-      state :off, do: :TOGGLE >>> :on
-    end
-
-    # module: MyApp.Statechart.Switch
-    statechart module: Switch do
-      state :on, default: true, do: :SWITCH_OFF >>> :off
-      state :off, do: :SWITCH_ON >>> :on
-    end
-  end
-  ```
-
   #{MacroOpts.docs(:statechart)}
   """
 
@@ -218,12 +172,6 @@ defmodule Statechart do
   @doc section: :build
   @doc """
   Register a transtion from an event and target state.
-
-  ## `StatechartError` raised when...
-  - `event` is non-atom
-  - `event` occurs elsewhere amongst this node's ancestors or descendents
-  - `target_state` doesn't exist
-  - `>>>/2` is called outside of a `state` block
   """
   defmacro event >>> target_state do
     MacroTransition.build_ast(event, target_state)
@@ -257,7 +205,7 @@ defmodule Statechart do
 
   @doc section: :manipulate
   @doc """
-  Returns `:ok` is last event was valid and caused a transition
+  Returns `:ok` if last event was valid and caused a transition
   """
   @spec last_event_status(t) :: :ok | :error
   defdelegate last_event_status(statechart), to: Machine
