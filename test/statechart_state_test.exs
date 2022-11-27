@@ -170,14 +170,9 @@ defmodule Statechart.StateTest do
     assert d_path_as_atoms == [mod | ~w/a b c d/a]
   end
 
-  # TODO repeat that statechart test that tests the three different types of functions
-  # TODO dedup the chart and state logic for escaping functions
-  # TODO add arity-0 actions
-  # done, just need to document it
-
-  test "Statechart.state/X :exit/entry options fire" do
+  test "Statechart.state/X :exit/entry option" do
     statechart_test_module mod do
-      statechart default: :a do
+      statechart default: :a, entry: fn -> IO.puts("put s") end do
         :GOTO_B >>> :b
         state :a, exit: fn -> IO.puts("put a") end
         state :b, entry: fn -> IO.puts("put b") end
@@ -186,6 +181,7 @@ defmodule Statechart.StateTest do
 
     captured_io = ExUnit.CaptureIO.capture_io(fn -> mod.new() |> Statechart.trigger(:GOTO_B) end)
 
+    assert captured_io =~ "put s"
     assert captured_io =~ "put a"
     assert captured_io =~ "put b"
   end

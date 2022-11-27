@@ -33,7 +33,8 @@ defmodule Statechart.Build.MacroChart do
             MacroChart.__do__(
               __ENV__,
               unquote(schema_type),
-              unquote(Keyword.take(opts, [:entry, :exit, :default]) |> Macro.escape())
+              unquote(opts |> Keyword.take([:entry, :exit]) |> Macro.escape()),
+              unquote(opts[:default])
             )
 
             import Statechart
@@ -85,18 +86,14 @@ defmodule Statechart.Build.MacroChart do
     end
   end
 
-  def __do__(env, chart_type, opts) do
+  def __do__(env, chart_type, actions, default) do
     # LATER test for bad default input in statechart
     case AccStep.get(env) do
       :init ->
-        init_schema(env, chart_type, Keyword.take(opts, ~w/entry exit/a))
+        init_schema(env, chart_type, actions)
 
       :insert_transitions_and_defaults ->
-        case Keyword.fetch(opts, :default) do
-          # LATER should insert_default take not an opts list?
-          {:ok, default} -> MacroState.insert_default(env, default: default)
-          :error -> :ok
-        end
+        if default, do: MacroState.insert_default(env, default)
 
       :validate ->
         validate_starting_node(env)

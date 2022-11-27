@@ -31,8 +31,8 @@ defmodule Statechart.Build.MacroState do
         MacroState.__do__(
           __ENV__,
           unquote(name),
-          unquote(Keyword.take(opts, ~w/entry exit/a) |> Macro.escape()),
-          unquote(opts)
+          unquote(opts |> Keyword.take(~w/entry exit/a) |> Macro.escape()),
+          unquote(opts[:default])
         )
 
         unquote(block)
@@ -40,15 +40,16 @@ defmodule Statechart.Build.MacroState do
     end
   end
 
-  @spec __do__(Macro.Env.t(), Statechart.state(), [Node.action_spec()], Keyword.t()) :: :ok
+  @spec __do__(Macro.Env.t(), Statechart.state(), [Node.action_spec()], nil | Statechart.state()) ::
+          :ok
   # LATER make options specific
-  def __do__(env, name, action_specs, opts) do
+  def __do__(env, name, action_specs, default_target) do
     case AccStep.get(env) do
       :insert_nodes ->
         insert_node(env, name, action_specs)
 
       :insert_transitions_and_defaults ->
-        insert_default(env, opts)
+        if default_target, do: insert_default(env, default_target)
 
       # LATER do validation stuff (like make sure all nodes get hit)
       :validate ->
@@ -91,22 +92,11 @@ defmodule Statechart.Build.MacroState do
     AccSchema.put_tree(env, new_tree)
   end
 
-  def insert_default(env, opts) do
-    schema = AccSchema.get(env)
+  def insert_default(env, target_name) when not is_nil(target_name) do
     tree = AccSchema.tree(env)
     local_id = AccNodeStack.local_id(env)
     origin_node = Tree.fetch_node!(tree, local_id: local_id)
-
-    case Keyword.fetch(opts, :default) do
-      {:ok, target_name} ->
-        new_tree = schema |> insert_default(origin_node, target_name) |> Schema.tree()
-        AccSchema.put_tree(env, new_tree)
-        :ok
-
-      # no default specified
-      :error ->
-        :ok
-    end
+    AccSchema.update_schema(env, &insert_default(&1, origin_node, target_name))
   end
 
   # LATER I don't like that this is the same name

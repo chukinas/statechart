@@ -66,8 +66,6 @@ defmodule Statechart.Machine do
 
   @type action(context) :: (context -> context)
 
-  # TODO add a test to test arity-0 fns on init
-
   defp apply_actions(initial_context, actions) do
     Enum.reduce(actions, initial_context, fn
       action, context when is_function(action, 0) ->
