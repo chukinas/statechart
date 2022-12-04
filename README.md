@@ -47,7 +47,6 @@ There are three steps to modeling via the `Statechart` library:
 - **DEFINE**
   - Start with a `statechart/2` block.
   - Define states with `state/3`. Nest as deeply as you want.
-  - Define transitions using `>>>/2`.
 - **INSTANTIATE**
   - `MyStatechart.new/0`
 - **MANIPULATE**
@@ -66,15 +65,12 @@ defmodule TrafficLight do
   use Statechart
 
   statechart default: :off do
-    state :off do
-      :TOGGLE >>> :on
-    end
+    state :off, event: :TOGGLE >>> :on
 
-    state :on, default: :red do
-      :TOGGLE >>> :off
-      state :red,    do: :NEXT >>> :green
-      state :yellow, do: :NEXT >>> :red
-      state :green,  do: :NEXT >>> :yellow
+    state :on, event: :TOGGLE >>> :off, default: :red do
+      state :red,    event: :NEXT >>> :green
+      state :yellow, event: :NEXT >>> :red
+      state :green,  event: :NEXT >>> :yellow
     end
   end
 end
@@ -136,10 +132,48 @@ defmodule ToggleStatechart do
 
   statechart default: :on do
     # Whoops! We've misspelled "off":
-    state :on, do: :TOGGLE >>> :of
-    state :off, do: :TOGGLE >>> :on
+    state :on, event: :TOGGLE >>> :of
+    state :off, event: :TOGGLE >>> :on
   end
 end
+```
+
+<!-- warning: this is referenced by some Statechart function docs -->
+## Events
+
+Events trigger state changes.
+
+Define events using the `:event` option in the following macros:
+- `Statechart.state/3`
+- `Statechart.statechart/2`
+- `Statechart.subchart/1`
+
+```elixir
+defmodule ToggleStatechart do
+  use Statechart
+  statechart default: :on do
+    state :on,  event: :TOGGLE >>> :off
+    state :off, event: :TOGGLE >>> :on
+  end
+end
+```
+
+Note the `:EVENT_NAME >>> :target_state_name` construction.
+This is just some syntactic sugar that returns `{:EVENT_NAME, :target_state_name}`,
+so if you prefer to use the 2-tuple directly, free free to do so.
+
+Use `Statechart.trigger/2` to send an event to a machine:
+
+```
+iex> toggle = ToggleStatechart.new()
+iex> Statechart.states(toggle)
+[:on]
+iex> toggle = Statechart.trigger(toggle, :TOGGLE)
+iex> Statechart.states(toggle)
+[:off]
+iex> toggle = Statechart.trigger(toggle, :TOGGLE)
+iex> Statechart.states(toggle)
+[:on]
 ```
 
 <!-- warning: this is referenced by some Statechart function docs -->
@@ -156,15 +190,15 @@ Here is a Lightswitch that prints a message every time it exits and enters a new
 
       statechart default: :off do
         state :on,
+          event: :TOGGLE >>> :off,
           entry: fn -> IO.puts("entering :on") end,
-          exit: fn -> IO.puts("exiting :on") end do
-          :TOGGLE >>> :off
+          exit: fn -> IO.puts("exiting :on") end
         end
 
         state :off,
+          event :TOGGLE >>> :on,
           entry: fn -> IO.puts("entering :off") end,
-          exit: fn -> IO.puts("exiting :off") end do
-          :TOGGLE >>> :on
+          exit: fn -> IO.puts("exiting :off") end
         end
       end
     end
@@ -201,9 +235,14 @@ Let's model that lightswitch that tracks how many cycles it's undergone.
 
     defmodule LightSwitch do
       use Statechart
-      statechart default: :off, context: {non_neg_integer, 0} do
-        state :on, entry: &(&1 + 1), do: :OFF >>> :off
-        state :off, do: :ON >>> :on
+      statechart default: :off,
+                 context: {non_neg_integer, 0} do
+        state :on,
+          event: :OFF >>> :off,
+          entry: &(&1 + 1)
+
+        state :off,
+          event: :ON >>> :on
       end
     end
 
@@ -221,9 +260,8 @@ In these cases, order matters.
 Let's look at a contrived example.
 
     statechart default: :alpaca,
+               event: :ALPHA >>> :beetle,
                context: {pos_integer, 1} do
-      :ALPHA >>> :beetle
-
       state :alpaca,
         entry: &(&1 + 1),
         entry: &(&1 * 3),
@@ -255,15 +293,14 @@ Here is the [TrafficLight module](#module-define) from above.
 
 ```elixir
 statechart module: TrafficLight, default: :off do
-  state :off do
-    :TOGGLE >>> :on
-  end
+  state :off, event: :TOGGLE >>> :on
 
-  state :on, default: :red do
-    :TOGGLE >>> :off
-    state :red,    do: :NEXT >>> :green
-    state :yellow, do: :NEXT >>> :red
-    state :green,  do: :NEXT >>> :yellow
+  state :on,
+    default: :red,
+    event: :TOGGLE >>> :off do
+    state :red,    event: :NEXT >>> :green
+    state :yellow, event: :NEXT >>> :red
+    state :green,  event: :NEXT >>> :yellow
   end
 end
 ```
@@ -289,8 +326,12 @@ defmodule Toggle do
   use Statechart
 
   statechart module: Statechart do
-    state :on, default: true, do: :TOGGLE >>> :off
-    state :off, do: :TOGGLE >>> :on
+    state :on,
+      default: true,
+      event: :TOGGLE >>> :off
+
+    state :off,
+      event: :TOGGLE >>> :on
   end
 end
 ```
@@ -303,14 +344,14 @@ defmodule MyApp.Statechart do
 
   # module: MyApp.Statechart.Toggle
   statechart module: Toggle, default: :on do
-    state :on, do: :TOGGLE >>> :off
-    state :off, do: :TOGGLE >>> :on
+    state :on, event: :TOGGLE >>> :off
+    state :off, event: :TOGGLE >>> :on
   end
 
   # module: MyApp.Statechart.Switch
   statechart module: Switch, default: :on do
-    state :on, do: :SWITCH_OFF >>> :off
-    state :off, do: :SWITCH_ON >>> :on
+    state :on, event: :SWITCH_OFF >>> :off
+    state :off, event: :SWITCH_ON >>> :on
   end
 end
 ```

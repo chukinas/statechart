@@ -59,13 +59,8 @@ defmodule Statechart.StateTest do
       defmodule MyStatechart do
         use Statechart
 
-        statechart do
-          :AMBIGUOUS_EVENT >>> :b
-
-          state :a do
-            :AMBIGUOUS_EVENT >>> :c
-          end
-
+        statechart event: :AMBIGUOUS_EVENT >>> :b do
+          state :a, event: :AMBIGUOUS_EVENT >>> :c
           state :b
           state :c
         end
@@ -150,9 +145,7 @@ defmodule Statechart.StateTest do
     statechart_test_module mod do
       statechart default: :d do
         state :a do
-          state :b do
-            :GOTO_D >>> :d
-
+          state :b, event: :GOTO_D >>> :d do
             state :c do
               state :d
             end
@@ -172,8 +165,9 @@ defmodule Statechart.StateTest do
 
   test "Statechart.state/X :exit/entry option" do
     statechart_test_module mod do
-      statechart default: :a, entry: fn -> IO.puts("put s") end do
-        :GOTO_B >>> :b
+      statechart default: :a,
+                 entry: fn -> IO.puts("put s") end,
+                 event: :GOTO_B >>> :b do
         state :a, exit: fn -> IO.puts("put a") end
         state :b, entry: fn -> IO.puts("put b") end
       end

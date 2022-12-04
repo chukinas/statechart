@@ -9,9 +9,7 @@ defmodule Statechart do
   alias Statechart.Build.MacroState
   alias Statechart.Build.MacroChart
   alias Statechart.Build.MacroOpts
-  alias Statechart.Build.MacroTransition
   alias Statechart.Build.MacroSubchart
-  alias Statechart.Build.MacroTransition
   alias Statechart.Machine
   alias Statechart.Schema.Location
 
@@ -40,6 +38,9 @@ defmodule Statechart do
           subchart_new: 1,
           subchart_new: 2
         ]
+
+      # TODO I shouldn't reference this directly
+      import Statechart.Build.MacroTransition, only: [>>>: 2]
 
       require MacroChart
       require AccStep
@@ -113,8 +114,8 @@ defmodule Statechart do
     use Statechart
 
     statechart do
-      state :on, default: true, do: :TOGGLE >>> :off
-      state :off, do: :TOGGLE >>> :on
+      state :on, default: true, event: :TOGGLE >>> :off
+      state :off, event: :TOGGLE >>> :on
     end
   end
   ```
@@ -169,13 +170,6 @@ defmodule Statechart do
 
   @doc false
   defmacro subchart_new(opts, block), do: MacroChart.build_ast(:subchart, opts, block)
-  @doc section: :build
-  @doc """
-  Register a transtion from an event and target state.
-  """
-  defmacro event >>> target_state do
-    MacroTransition.build_ast(event, target_state)
-  end
 
   @doc section: :manipulate
   @doc """

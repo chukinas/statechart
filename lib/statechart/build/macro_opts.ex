@@ -7,13 +7,15 @@ defmodule Statechart.Build.MacroOpts do
 
   def __validation_keys__,
     do: %{
-      statechart: ~w/default module entry context/a,
+      statechart: ~w/event default module entry context/a,
       subchart: ~w/default module entry exit/a,
-      state: ~w/default entry exit/a
+      state: ~w/event default entry exit/a
     }
 
-  def __doc_keys__,
-    do: %{
+  def __doc_keys__ do
+    %{
+      event:
+        "define transitions between states triggered by events (see [Events](#module-events))",
       default:
         "name of a child node to auto-transition to when this node is targeted. Required for any non-leaf node. (see [Defaults](#module-defaults))",
       entry:
@@ -25,6 +27,7 @@ defmodule Statechart.Build.MacroOpts do
       module:
         "nests the chart in a submodule of the given name (see [Submodules](#module-submodules))"
     }
+  end
 
   @type macro :: :statechart | :state | :subchart
 
@@ -45,6 +48,13 @@ defmodule Statechart.Build.MacroOpts do
 
   def escaped_actions(opts) do
     opts |> Keyword.take([:entry, :exit]) |> Macro.escape()
+  end
+
+  def events(opts) do
+    Enum.flat_map(opts, fn
+      {:event, event} -> [event]
+      _ -> []
+    end)
   end
 
   def docs(macro) do

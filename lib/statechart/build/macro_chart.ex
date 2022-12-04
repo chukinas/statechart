@@ -8,9 +8,10 @@ defmodule Statechart.Build.MacroChart do
   alias Statechart.Build.AccNodeStack
   alias Statechart.Build.AccSchema
   alias Statechart.Build.AccStep
-  alias Statechart.Build.MacroState
   alias Statechart.Build.MacroChart
   alias Statechart.Build.MacroOpts
+  alias Statechart.Build.MacroState
+  alias Statechart.Build.MacroTransition
   alias Statechart.Schema
   alias Statechart.Schema.Node
   alias Statechart.Schema.Tree
@@ -36,6 +37,8 @@ defmodule Statechart.Build.MacroChart do
               unquote(MacroOpts.escaped_actions(opts)),
               unquote(opts[:default])
             )
+
+            MacroTransition.__events__(__ENV__, unquote(MacroOpts.events(opts)))
 
             import Statechart
             unquote(block)

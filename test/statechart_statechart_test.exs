@@ -1,5 +1,15 @@
+defmodule ToggleStatechart do
+  use Statechart
+
+  statechart default: :on do
+    state :on, event: :TOGGLE >>> :off
+    state :off, event: :TOGGLE >>> :on
+  end
+end
+
 defmodule Statechart.StatechartTest do
   use Statechart.Case
+
   doctest Statechart
 
   # LATER add statechart/0 to API
@@ -37,10 +47,19 @@ defmodule Statechart.StatechartTest do
     statechart module: module_name()
   end
 
-  # This should test for the line number
-  # Should give suggestions for matching names ("Did you mean ...?")
-  describe ">>>/2" do
-    # This should test for the line number
+  describe "Statechart.statechart/X :event option" do
+    # TODO
+    test "works" do
+      statechart_test_module mod do
+        statechart default: :on, event: {:OFF, :off} do
+          state :on
+          state :off
+        end
+      end
+
+      mod.new |> assert_state(:on) |> Statechart.trigger(:OFF) |> assert_state(:off)
+    end
+
     test "raises a StatechartError on invalid event names"
     test "an event targetting a branch node must provides a default path to a leaf node"
     test "raises if event targets a root that doesn't resolve"

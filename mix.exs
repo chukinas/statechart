@@ -74,7 +74,7 @@ defmodule Statechart.MixProject do
       extras: ["CHANGELOG.md"],
       formatters: ["html"],
       groups_for_functions: [
-        define: &(&1[:section] == :build),
+        Define: &(&1[:section] == :build),
         Manipulate: &(&1[:section] == :manipulate)
       ],
       main: "Statechart",

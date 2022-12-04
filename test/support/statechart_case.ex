@@ -16,6 +16,7 @@ defmodule Statechart.Case do
 
   def assert_state(machine, expected_state) do
     assert Statechart.in_state?(machine, expected_state)
+    machine
   end
 
   defmacro module_name do

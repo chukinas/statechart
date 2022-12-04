@@ -20,8 +20,7 @@ defmodule Statechart.SubchartTest do
           statechart entry: &SubchartRootActionsBothLocalAndFromParent.action_entering_subchart/1
         end
 
-        statechart default: :bar do
-          :GOTO_FOO >>> :foo
+        statechart default: :bar, event: :GOTO_FOO >>> :foo do
           subchart :foo, Subchart, entry: &__MODULE__.action_entering_foo/1
           state :bar
         end
@@ -46,8 +45,8 @@ defmodule Statechart.SubchartTest do
           statechart entry: &SubchartRootHasActions.action_entering_subchart/1
         end
 
-        statechart default: :bar do
-          :GOTO_FOO >>> :foo
+        statechart default: :bar,
+                   event: :GOTO_FOO >>> :foo do
           subchart :foo, Subchart
           state :bar
         end
