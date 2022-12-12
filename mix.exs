@@ -14,6 +14,7 @@ defmodule Statechart.MixProject do
       deps: deps(),
 
       # Tests and Checks
+      aliases: aliases(),
       dialyzer: dialyzer(),
       test_coverage: [
         summary: [threshold: 80],
@@ -41,6 +42,12 @@ defmodule Statechart.MixProject do
         "Changelog" => "https://hexdocs.pm/statechart/changelog.html",
         "GitHub" => @repo_url
       }
+    ]
+  end
+
+  defp aliases do
+    [
+      test: "test --warnings-as-errors"
     ]
   end
 
