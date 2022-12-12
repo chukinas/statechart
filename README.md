@@ -1,4 +1,10 @@
 # StateChart
+> statecharts with strong compile-time guarantees
+
+[![CI](https://github.com/jonathanchukinas/statechart/actions/workflows/elixir.yml/badge.svg)](https://github.com/jonathanchukinas/statechart/actions/workflows/elixir.yml)
+[![Hex Version](https://img.shields.io/hexpm/v/statechart.svg)](https://hex.pm/packages/statechart)
+[![Docs](https://img.shields.io/badge/docs-hexpm-blue.svg)](https://hexdocs.pm/statechart)
+[![License](https://img.shields.io/hexpm/l/statechart.svg)](LICENSE.md)
 
 <!--- StateChart moduledoc start -->
 
