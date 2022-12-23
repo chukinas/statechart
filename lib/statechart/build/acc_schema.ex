@@ -17,7 +17,7 @@ defmodule Statechart.Build.AccSchema do
   end
 
   @spec put(Macro.Env.t(), Schema.t()) :: Macro.Env.t()
-  defp put(env, schema) do
+  def put(env, schema) do
     Module.put_attribute(env.module, :__statechart_schema__, schema)
     env
   end

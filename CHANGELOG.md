@@ -5,10 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2022-11
+## [0.3.0] - 2022-12
 
 ### Added
 * `:event` opt for `Statechart.state/3` and `Statechart.statechart/2`
+* `:subchart` opt for `Statechart.state`
+* `Statechart.subchart/1`
+* `Statechart.subchart/2`
+* `:default`, `:module`, `:entry`, and `:exit` opts for `Statechart.subchart`
+* TODO why doesn't subchart take the :event opt?
+
 
 ### Removed
 * `Statechart.>>>`

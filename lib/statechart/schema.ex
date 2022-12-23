@@ -28,9 +28,8 @@ defmodule Statechart.Schema do
   #####################################
   # CONSTRUCTORS
 
-  def new(tree, opts \\ []) do
-    subchart? = !!opts[:subchart?]
-    type = if subchart?, do: :subchart, else: :statechart
+  @spec new(Tree.t(), schema_type()) :: t
+  def new(tree, type) do
     %__MODULE__{tree: tree, type: type}
   end
 
@@ -43,6 +42,9 @@ defmodule Statechart.Schema do
 
   #####################################
   # CONVERTERS
+
+  @spec type(t) :: schema_type
+  def type(%__MODULE__{type: val}), do: val
 
   @spec destination_local_id_from_event(t, Event.t(), Location.local_id()) ::
           {:ok, Location.local_id()} | :error

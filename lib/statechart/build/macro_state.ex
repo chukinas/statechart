@@ -11,6 +11,7 @@ defmodule Statechart.Build.MacroState do
   alias Statechart.Build.AccStep
   alias Statechart.Build.MacroChart
   alias Statechart.Build.MacroOpts
+  alias Statechart.Build.MacroSubchart
   alias Statechart.Build.MacroTransition
   alias Statechart.Schema
   alias Statechart.Schema.Node
@@ -34,6 +35,11 @@ defmodule Statechart.Build.MacroState do
           unquote(MacroOpts.escaped_actions(opts)),
           unquote(opts[:default])
         )
+
+        case Keyword.fetch(unquote(opts), :subchart) do
+          {:ok, subchart_value} -> MacroSubchart.__from_keyword_value__(__ENV__, subchart_value)
+          :error -> nil
+        end
 
         MacroTransition.__events__(__ENV__, unquote(MacroOpts.events(opts)))
 
@@ -78,7 +84,6 @@ defmodule Statechart.Build.MacroState do
     # LATER take advantage of this in statechart?
     new_node =
       action_specs
-      |> Keyword.take(~w/entry exit/a)
       |> Enum.reduce(new_node, fn {type, action}, node ->
         placeholder = AccFunctions.put_and_get_placeholder(env, action)
         Node.add_action(node, type, placeholder)
@@ -93,6 +98,7 @@ defmodule Statechart.Build.MacroState do
     AccSchema.put_tree(env, new_tree)
   end
 
+  # LATER why do I check for `not is_nil`?
   def insert_default(env, target_name) when not is_nil(target_name) do
     tree = AccSchema.tree(env)
     local_id = AccNodeStack.local_id(env)

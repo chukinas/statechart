@@ -5,17 +5,27 @@ defmodule Statechart.Build.MacroOpts do
     Options operations for statechart/2 and state/3.
     """
 
-  def __validation_keys__,
-    do: %{
+  @doc """
+  The keys allowed in the options for each macro.
+
+  The order drives their display order in the docs
+  """
+  def __validation_keys__ do
+    %{
       statechart: ~w/event default module entry context/a,
       subchart: ~w/default module entry exit/a,
-      state: ~w/event default entry exit/a
+      state: ~w/event default entry exit subchart/a
     }
+  end
 
   def __doc_keys__ do
     %{
       event:
         "define transitions between states triggered by events (see [Events](#module-events))",
+      subchart:
+        "a {module, atom/keyword list} that defines a subchart (see [Subcharts](#module-subcharts))",
+      # externals:
+      #   "list of atoms that represent states that wire this subchart up to states in a parent statechart (see [Subcharts](#modules-subcharts))",
       default:
         "name of a child node to auto-transition to when this node is targeted. Required for any non-leaf node. (see [Defaults](#module-defaults))",
       entry:

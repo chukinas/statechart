@@ -111,7 +111,7 @@ defmodule Statechart.StateTest do
     test "is arg2 for arity-2" do
       statechart_test_module mod do
         statechart default: :alpaca do
-          state :alpaca, entry: &List.wrap/1
+          state :alpaca, entry: &List.wrap(&1)
         end
       end
 
@@ -182,7 +182,7 @@ defmodule Statechart.StateTest do
 
   # LATER test various ways of declaring action functions
   describe "Statechart.state/2 :subchart option" do
-    subchart_new module: Subchart, default: :on do
+    subchart module: Subchart, default: :on do
       state :on
       state :off
     end
@@ -192,7 +192,7 @@ defmodule Statechart.StateTest do
         statechart default: :flarb do
           state :flarb
           # LATER change this to a state/2 :subchart option
-          subchart :flazzl, Subchart
+          state :flazzl, subchart: Subchart
         end
       end
 
@@ -204,10 +204,10 @@ defmodule Statechart.StateTest do
     end
 
     test "throws if value is anything other than a module defining a Statechart" do
-      assert_raise StatechartError, ~r/does not define a Statechart/, fn ->
+      assert_raise ArgumentError, ~r/Expected a module/, fn ->
         statechart_test_module do
           statechart do
-            subchart :flazzl, "hi"
+            state :flazzl, subchart: "hi"
           end
         end
       end

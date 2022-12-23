@@ -9,9 +9,9 @@ defmodule Statechart.MachineTest do
   def print_notice(_), do: IO.puts("Exiting the light cycle")
 
   # LATER introduce subchart
-  subchart_new module: LightCycle,
-               default: :red,
-               exit: &Statechart.MachineTest.print_notice/1 do
+  subchart module: LightCycle,
+           default: :red,
+           exit: &Statechart.MachineTest.print_notice/1 do
     state :red, event: :NEXT >>> :green
     state :yellow, event: :NEXT >>> :red
     state :green, event: :NEXT >>> :yellow
@@ -20,8 +20,7 @@ defmodule Statechart.MachineTest do
   defmodule TrafficLight do
     statechart default: :off do
       state :off, event: :TOGGLE_POWER >>> :on
-      # LATER replace subchart with chart that takes a partial: ModuleName option
-      subchart :on, LightCycle, event: :TOGGLE_POWER >>> :off
+      state :on, subchart: LightCycle, event: :TOGGLE_POWER >>> :off
     end
 
     # LATER: be able to define functions inside statechart block

@@ -356,6 +356,36 @@ defmodule MyApp.Statechart do
 end
 ```
 
+<!-- warning: this is referenced by some Statechart function docs -->
+## Subcharts
+
+Subcharts provide a mechanism for composing statecharts,
+particularly useful for large, nested charts.
+A subchart is analagous to template partials in web frameworks.
+
+Here's how we can extract part the earlier TrafficLight statechart.
+
+```elixir
+defmodule ActiveTrafficLight do
+  use Statechart
+end
+
+defmodule TrafficLight do
+  use Statechart
+
+  subchart module: Active, default: :red do
+    state :red,    event: :NEXT >>> :green
+    state :yellow, event: :NEXT >>> :red
+    state :green,  event: :NEXT >>> :yellow
+  end
+
+  statechart default: :off do
+    state :off, event: :TOGGLE >>> :on
+    state :on,  event: :TOGGLE >>> :off, subchart: TrafficLight.Active
+  end
+end
+```
+
 ## Other statechart / state machine libraries
 
 With a plethora of other related libraries,
@@ -376,11 +406,11 @@ Other libraries you might look into:
 - [X] `v0.1.0` hierarchical states (see Harel, §2)
 - [X] `v0.1.0` defaults (see Harel, Fig.6)
 - [X] `v0.2.0` context and actions (see Harel, §5)
+- [X] `v0.3.0` composability via subcharts
 - [ ] actions associated with events (see γ/W in Harel, Fig.37)
 - [ ] events triggered by actions (see β in Harel, Fig.37)
 - [ ] orthogonality (see Harel, §3)
 - [ ] event conditions
-- [ ] composability via subcharts
 - [ ] final state
 - [ ] state history (see Harel, Fig.10)
 - [ ] transition history
