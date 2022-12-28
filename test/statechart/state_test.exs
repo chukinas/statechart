@@ -59,13 +59,8 @@ defmodule Statechart.StateTest do
       defmodule MyStatechart do
         use Statechart
 
-        statechart do
-          :AMBIGUOUS_EVENT >>> :b
-
-          state :a do
-            :AMBIGUOUS_EVENT >>> :c
-          end
-
+        statechart event: :AMBIGUOUS_EVENT >>> :b do
+          state :a, event: :AMBIGUOUS_EVENT >>> :c
           state :b
           state :c
         end
@@ -116,7 +111,7 @@ defmodule Statechart.StateTest do
     test "is arg2 for arity-2" do
       statechart_test_module mod do
         statechart default: :alpaca do
-          state :alpaca, entry: &List.wrap/1
+          state :alpaca, entry: &List.wrap(&1)
         end
       end
 
@@ -150,9 +145,7 @@ defmodule Statechart.StateTest do
     statechart_test_module mod do
       statechart default: :d do
         state :a do
-          state :b do
-            :GOTO_D >>> :d
-
+          state :b, event: :GOTO_D >>> :d do
             state :c do
               state :d
             end
@@ -172,8 +165,9 @@ defmodule Statechart.StateTest do
 
   test "Statechart.state/X :exit/entry option" do
     statechart_test_module mod do
-      statechart default: :a, entry: fn -> IO.puts("put s") end do
-        :GOTO_B >>> :b
+      statechart default: :a,
+                 entry: fn -> IO.puts("put s") end,
+                 event: :GOTO_B >>> :b do
         state :a, exit: fn -> IO.puts("put a") end
         state :b, entry: fn -> IO.puts("put b") end
       end
@@ -188,7 +182,7 @@ defmodule Statechart.StateTest do
 
   # LATER test various ways of declaring action functions
   describe "Statechart.state/2 :subchart option" do
-    subchart_new module: Subchart, default: :on do
+    subchart module: Subchart, default: :on do
       state :on
       state :off
     end
@@ -198,7 +192,7 @@ defmodule Statechart.StateTest do
         statechart default: :flarb do
           state :flarb
           # LATER change this to a state/2 :subchart option
-          subchart :flazzl, Subchart
+          state :flazzl, subchart: Subchart
         end
       end
 
@@ -210,10 +204,10 @@ defmodule Statechart.StateTest do
     end
 
     test "throws if value is anything other than a module defining a Statechart" do
-      assert_raise StatechartError, ~r/does not define a Statechart/, fn ->
+      assert_raise ArgumentError, ~r/Expected a module/, fn ->
         statechart_test_module do
           statechart do
-            subchart :flazzl, "hi"
+            state :flazzl, subchart: "hi"
           end
         end
       end

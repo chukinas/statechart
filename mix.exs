@@ -7,13 +7,14 @@ defmodule Statechart.MixProject do
   def project do
     [
       app: @project_name,
-      version: "0.2.0",
+      version: "0.3.0",
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
 
       # Tests and Checks
+      aliases: aliases(),
       dialyzer: dialyzer(),
       test_coverage: [
         summary: [threshold: 80],
@@ -41,6 +42,12 @@ defmodule Statechart.MixProject do
         "Changelog" => "https://hexdocs.pm/statechart/changelog.html",
         "GitHub" => @repo_url
       }
+    ]
+  end
+
+  defp aliases do
+    [
+      test: "test --warnings-as-errors"
     ]
   end
 
@@ -74,7 +81,7 @@ defmodule Statechart.MixProject do
       extras: ["CHANGELOG.md"],
       formatters: ["html"],
       groups_for_functions: [
-        define: &(&1[:section] == :build),
+        Define: &(&1[:section] == :build),
         Manipulate: &(&1[:section] == :manipulate)
       ],
       main: "Statechart",

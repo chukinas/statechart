@@ -1,5 +1,15 @@
+defmodule ToggleStatechart do
+  use Statechart
+
+  statechart default: :on do
+    state :on, event: :TOGGLE >>> :off
+    state :off, event: :TOGGLE >>> :on
+  end
+end
+
 defmodule Statechart.StatechartTest do
   use Statechart.Case
+
   doctest Statechart
 
   # LATER add statechart/0 to API
@@ -19,9 +29,10 @@ defmodule Statechart.StatechartTest do
   describe "Statechart.statechart/X :default option" do
     test "is required if any states are declared" do
       assert_raise StatechartError, ~r/need to set a default state/, fn ->
-        statechart module: NoDefaultSet do
-          # LATER should I allow no do block?
-          state :foo, do: nil
+        statechart_test_module do
+          statechart do
+            state :foo
+          end
         end
       end
     end
@@ -34,18 +45,40 @@ defmodule Statechart.StatechartTest do
   end
 
   test "Statechart.statechart/X :module option wraps chart in the given module" do
-    statechart module: module_name()
+    module_name = module_name()
+    assert {:module, ^module_name, _, nil} = statechart(module: module_name)
   end
 
-  # This should test for the line number
-  # Should give suggestions for matching names ("Did you mean ...?")
-  describe ">>>/2" do
-    # This should test for the line number
+  describe "Statechart.statechart/X :event option" do
+    # TODO
+    test "works" do
+      statechart_test_module mod do
+        # LATER use the >>> syntax
+        statechart default: :on, event: {:OFF, :off} do
+          state :on
+          state :off
+        end
+      end
+
+      mod.new |> assert_state(:on) |> Statechart.trigger(:OFF) |> assert_state(:off)
+    end
+
     test "raises a StatechartError on invalid event names"
     test "an event targetting a branch node must provides a default path to a leaf node"
     test "raises if event targets a root that doesn't resolve"
     test "raises if target does not resolve to a leaf node"
-    test "raises if target does not exist"
+
+    # TODO all the changes to this test file... extract that out into a separate commit
+    test "raises if target does not exist" do
+      assert_raise StatechartError,
+                   ~r/Expected to find a target state with name :does_not_exist/,
+                   fn ->
+                     statechart module: unique_module_name(),
+                                event: :MY_EVENT >>> :does_not_exist do
+                       state :alpaca
+                     end
+                   end
+    end
   end
 
   describe "Statechart.statechart/X :context option" do

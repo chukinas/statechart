@@ -5,7 +5,7 @@ defmodule Statechart.Schema.Event do
     """
 
   @typedoc """
-  Valid value for registering transitions via `Statechart.>>>/2`
+  Valid value for registering transitions via `Statechart.statechart/2` and `Statechart.state/3` :event option
 
   We recommend following a statechart convention and using uppercase for simple
   atom events, example: `:MY_EVENT`.

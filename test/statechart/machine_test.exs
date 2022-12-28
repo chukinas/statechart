@@ -9,19 +9,18 @@ defmodule Statechart.MachineTest do
   def print_notice(_), do: IO.puts("Exiting the light cycle")
 
   # LATER introduce subchart
-  subchart_new module: LightCycle,
-               default: :red,
-               exit: &Statechart.MachineTest.print_notice/1 do
-    state :red, do: :NEXT >>> :green
-    state :yellow, do: :NEXT >>> :red
-    state :green, do: :NEXT >>> :yellow
+  subchart module: LightCycle,
+           default: :red,
+           exit: &Statechart.MachineTest.print_notice/1 do
+    state :red, event: :NEXT >>> :green
+    state :yellow, event: :NEXT >>> :red
+    state :green, event: :NEXT >>> :yellow
   end
 
   defmodule TrafficLight do
     statechart default: :off do
-      state :off, do: :TOGGLE_POWER >>> :on
-      # LATER replace subchart with chart that takes a partial: ModuleName option
-      subchart :on, LightCycle, do: :TOGGLE_POWER >>> :off
+      state :off, event: :TOGGLE_POWER >>> :on
+      state :on, subchart: LightCycle, event: :TOGGLE_POWER >>> :off
     end
 
     # LATER: be able to define functions inside statechart block
@@ -34,25 +33,20 @@ defmodule Statechart.MachineTest do
 
   # subchart module: LightCycle, default: :red do
   #   on exit: fn -> IO.puts("Exiting the light cycle") end
-  #   state :green, do: :NEXT >>> :yellow
-  #   state :yellow, do: :NEXT >>> :red
-  #   state :red, do: :NEXT >>> :green
+  #   state :green, event: :NEXT >>> :yellow
+  #   state :yellow, event: :NEXT >>> :red
+  #   state :red, event: :NEXT >>> :green
   # end
 
   # statechart module: TrafficLight, default: on do
-  #   state :off, do: :TOGGLE_POWER >>> :on
-  #   chart :on, subchart: LightCycle, do: :TOGGLE_POWER >>> :off
-  #   # subchart :on, LightCycle, do: :TOGGLE_POWER >>> :off
+  #   state :off, event: :TOGGLE_POWER >>> :on
+  #   chart :on, subchart: LightCycle, event: :TOGGLE_POWER >>> :off
+  #   # subchart :on, LightCycle, event: :TOGGLE_POWER >>> :off
   # end
 
   statechart module: MyStatechart, default: :on do
-    state :on do
-      :TOGGLE >>> :off
-    end
-
-    state :off do
-      :TOGGLE >>> :on
-    end
+    state :on, event: :TOGGLE >>> :off
+    state :off, event: :TOGGLE >>> :on
   end
 
   describe "MyStatechart.machine/0" do
@@ -62,19 +56,17 @@ defmodule Statechart.MachineTest do
   end
 
   describe "trigger/3" do
-    statechart module: SimpleToggle, default: :on do
-      :GLOBAL_TURN_ON >>> :on
-      :GLOBAL_TURN_OFF >>> :off
+    statechart module: SimpleToggle,
+               default: :on,
+               event: :GLOBAL_TURN_ON >>> :on,
+               event: :GLOBAL_TURN_OFF >>> :off do
+      state :on,
+        event: :TOGGLE >>> :off,
+        event: :LOCAL_TURN_OFF >>> :off
 
-      state :on do
-        :TOGGLE >>> :off
-        :LOCAL_TURN_OFF >>> :off
-      end
-
-      state :off do
-        :TOGGLE >>> :on
-        :LOCAL_TURN_ON >>> :on
-      end
+      state :off,
+        event: :TOGGLE >>> :on,
+        event: :LOCAL_TURN_ON >>> :on
     end
 
     test "a transition registered directly on current node allows a transition" do
@@ -120,10 +112,9 @@ defmodule Statechart.MachineTest do
 
       # LATER the no resolved root node needs better error message.
       # Maybe tell user the last node it resolved to, but that that node has no default
-      statechart default: :branch_with_default do
-        :GOTO_BRANCH_WITH_DEFAULT >>> :branch_with_default
-        :GOTO_BRANCH_NO_DEFAULT_BUT_NO_RESOLUTION >>> :branch_with_default_but_no_resolution
-
+      statechart default: :branch_with_default,
+                 event: :GOTO_BRANCH_WITH_DEFAULT >>> :branch_with_default,
+                 event: :NO_RESOLVE >>> :branch_with_default_but_no_resolution do
         # LATER this should actually fail at compile time
         state :branch_with_default_but_no_resolution, default: :branch_no_default do
           state :branch_no_default do

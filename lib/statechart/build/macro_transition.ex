@@ -5,34 +5,22 @@ defmodule Statechart.Build.MacroTransition do
     """
 
   require Statechart.Schema.Node, as: Node
-  alias __MODULE__
   alias Statechart.Build.AccSchema
   alias Statechart.Build.AccStep
   alias Statechart.Build.AccNodeStack
-  alias Statechart.Build.MacroChart
   alias Statechart.Schema
   alias Statechart.Schema.Event
   alias Statechart.Schema.Location
   alias Statechart.Schema.Transition
   alias Statechart.Schema.Tree
 
-  def build_ast(event, target_name) do
-    quote bind_quoted: [event: event, target_name: target_name] do
-      require MacroChart
+  def event >>> target_state, do: {event, target_state}
 
-      MacroChart.throw_if_not_in_statechart_block(
-        "transition must be called inside a statechart/2 block"
-      )
-
-      MacroTransition.__do__(__ENV__, event, target_name)
-    end
-  end
-
-  @spec __do__(Macro.Env.t(), Event.t(), Statechart.state()) :: :ok
-  def __do__(env, event, target_name) do
-    case AccStep.get(env) do
-      :insert_transitions_and_defaults -> insert_transition(env, event, target_name)
-      _ -> :ok
+  def __events__(env, events) do
+    with :insert_transitions_and_defaults <- AccStep.get(env) do
+      Enum.each(events, fn {event, target_name} ->
+        insert_transition(env, event, target_name)
+      end)
     end
   end
 
@@ -64,7 +52,7 @@ defmodule Statechart.Build.MacroTransition do
             schema |> Schema.tree() |> Tree.fetch_nodes!([:local]) |> Enum.map(&Node.name/1)
 
           raise StatechartError,
-                "Expected to find a target state with name :#{target_name} but none was found, " <>
+                "Expected to find a target state with name #{inspect(target_name)} but none was found, " <>
                   "valid names are: #{inspect(local_node_names)}"
       end
 
@@ -76,12 +64,10 @@ defmodule Statechart.Build.MacroTransition do
     :ok
   end
 
-  @doc """
-  Look for an event among a node's ancestors and path, which includes itself.
-  """
+  # Look for an event among a node's ancestors and path, which includes itself.
   @spec find_transition_in_family_tree(Tree.t(), Location.local_id(), Event.t()) ::
           Transition.t() | nil
-  def find_transition_in_family_tree(tree, local_id, event) do
+  defp find_transition_in_family_tree(tree, local_id, event) do
     nodes = Tree.fetch_family_tree!(tree, local_id: local_id)
 
     nodes

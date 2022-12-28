@@ -8,9 +8,11 @@ defmodule Statechart.Build.MacroChart do
   alias Statechart.Build.AccNodeStack
   alias Statechart.Build.AccSchema
   alias Statechart.Build.AccStep
-  alias Statechart.Build.MacroState
   alias Statechart.Build.MacroChart
   alias Statechart.Build.MacroOpts
+  alias Statechart.Build.MacroState
+  alias Statechart.Build.MacroSubchart
+  alias Statechart.Build.MacroTransition
   alias Statechart.Schema
   alias Statechart.Schema.Node
   alias Statechart.Schema.Tree
@@ -36,6 +38,8 @@ defmodule Statechart.Build.MacroChart do
               unquote(MacroOpts.escaped_actions(opts)),
               unquote(opts[:default])
             )
+
+            MacroTransition.__events__(__ENV__, unquote(MacroOpts.events(opts)))
 
             import Statechart
             unquote(block)
@@ -92,6 +96,7 @@ defmodule Statechart.Build.MacroChart do
       :insert_nodes ->
         init_schema(env, chart_type, actions)
 
+      # LATER: rename transitions -> events
       :insert_transitions_and_defaults ->
         if default, do: MacroState.insert_default(env, default)
 
@@ -117,7 +122,7 @@ defmodule Statechart.Build.MacroChart do
       |> AccNodeStack.location()
       |> Tree.new()
       |> Tree.update_root(add_actions_fn)
-      |> Schema.new(type: chart_type)
+      |> Schema.new(chart_type)
 
     AccSchema.init(env, schema)
 
@@ -134,26 +139,25 @@ defmodule Statechart.Build.MacroChart do
   end
 
   defmacro __before_compile__(env) do
-    quote do
-      unquote(__MODULE__).internal_api(unquote(env))
-      unquote(__MODULE__).public_api(unquote(env))
+    schema = AccSchema.get(env)
+    escaped_schema = Macro.escape(schema)
+    AccNodeStack.clean_up(env)
+
+    case Schema.type(schema) do
+      :statechart -> statechart_api(escaped_schema, env)
+      :subchart -> MacroSubchart.subchart_api_ast(escaped_schema)
     end
   end
 
-  defmacro internal_api(env) do
-    schema =
-      env
-      |> AccSchema.get()
-      |> Macro.escape()
-      |> Macro.prewalk(AccFunctions.prewalk_substitution_fn(env))
-
-    AccNodeStack.clean_up(env)
+  defp statechart_api(escaped_schema_with_placeholders, env) do
+    escaped_schema_with_functions =
+      Macro.prewalk(escaped_schema_with_placeholders, AccFunctions.prewalk_substitution_fn(env))
 
     quote do
       alias Statechart.Machine
 
       @spec __schema__ :: Schema.t()
-      def __schema__, do: unquote(schema)
+      def __schema__, do: unquote(escaped_schema_with_functions)
 
       @spec __tree__ :: Tree.t()
       def __tree__ do
@@ -164,12 +168,7 @@ defmodule Statechart.Build.MacroChart do
       def __nodes__ do
         __tree__() |> Tree.nodes()
       end
-    end
-  end
 
-  defmacro public_api(_env) do
-    quote do
-      alias Statechart.Machine
       @spec new :: Statechart.t(context())
       def new do
         Machine.__new__(__MODULE__, __context__())
@@ -178,6 +177,7 @@ defmodule Statechart.Build.MacroChart do
   end
 
   # LATER: can this be a function?
+  # LATER: rename to say "chart" instead of "statechart" (b/c it'll apply to the subchart macro as well)
   defmacro throw_if_not_in_statechart_block(error_msg) do
     quote do
       unless Module.has_attribute?(__MODULE__, :__statechart_inside_block__) do

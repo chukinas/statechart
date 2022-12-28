@@ -9,9 +9,6 @@ defmodule Statechart do
   alias Statechart.Build.MacroState
   alias Statechart.Build.MacroChart
   alias Statechart.Build.MacroOpts
-  alias Statechart.Build.MacroTransition
-  alias Statechart.Build.MacroSubchart
-  alias Statechart.Build.MacroTransition
   alias Statechart.Machine
   alias Statechart.Schema.Location
 
@@ -37,9 +34,12 @@ defmodule Statechart do
           statechart: 0,
           statechart: 1,
           statechart: 2,
-          subchart_new: 1,
-          subchart_new: 2
+          subchart: 1,
+          subchart: 2
         ]
+
+      # TODO I shouldn't reference this directly
+      import Statechart.Build.MacroTransition, only: [>>>: 2]
 
       require MacroChart
       require AccStep
@@ -113,8 +113,8 @@ defmodule Statechart do
     use Statechart
 
     statechart do
-      state :on, default: true, do: :TOGGLE >>> :off
-      state :off, do: :TOGGLE >>> :on
+      state :on, default: true, event: :TOGGLE >>> :off
+      state :off, event: :TOGGLE >>> :on
     end
   end
   ```
@@ -136,46 +136,30 @@ defmodule Statechart do
   defmacro statechart(do: block), do: MacroChart.build_ast(:statechart, [], block)
   defmacro statechart(opts), do: MacroChart.build_ast(:statechart, opts, nil)
 
-  # FutureFeature
-  @doc false
-  # Inject a chart defined in another module.
-  # ## `StatechartError` raised when...
-  # - `subchart/2` is passed anything besides the name of a module that containing a `statechart/2` call
-  # - `state/2` is called outside of a `statechart` block
-  defmacro subchart(name, module, opts \\ [], do_block \\ [do: nil])
+  subchart_oneliner = "Define a partial statechart to be inserted into a parent statechart."
 
-  defmacro subchart(name, module, opts, do: block) do
-    MacroSubchart.build_ast(name, module, opts, block)
-  end
+  @doc """
+  #{subchart_oneliner}
 
-  # LATER rename to subchart, add doc, and make public
-  # have to then remove the current subchart and absorb its functionality into `state`
-  _doc = """
-  blarg
+  See `subchart/2` for details
+  """
+  @doc section: :build
+  defmacro subchart(do: block), do: MacroChart.build_ast(:subchart, [], block)
+  defmacro subchart(opts), do: MacroChart.build_ast(:subchart, opts, nil)
+  # TODO implement subchart tests
+
+  # TODO finish writing this doc
+  # TODO move the #Subcharts section of README into here.
+  @doc """
+  #{subchart_oneliner}
 
   blarg
 
   #{MacroOpts.docs(:subchart)}
   """
-
-  @doc false
-  defmacro subchart_new(), do: MacroChart.build_ast(:subchart, [], nil)
-  @doc false
-  defmacro subchart_new(do: block), do: MacroChart.build_ast(:subchart, [], block)
-
-  defmacro subchart_new(opts) do
-    MacroChart.build_ast(:subchart, opts, nil)
-  end
-
-  @doc false
-  defmacro subchart_new(opts, block), do: MacroChart.build_ast(:subchart, opts, block)
+  # TODO should I be pattern-matching on do: block ?
   @doc section: :build
-  @doc """
-  Register a transtion from an event and target state.
-  """
-  defmacro event >>> target_state do
-    MacroTransition.build_ast(event, target_state)
-  end
+  defmacro subchart(opts, block), do: MacroChart.build_ast(:subchart, opts, block)
 
   @doc section: :manipulate
   @doc """

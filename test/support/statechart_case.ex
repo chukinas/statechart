@@ -16,11 +16,19 @@ defmodule Statechart.Case do
 
   def assert_state(machine, expected_state) do
     assert Statechart.in_state?(machine, expected_state)
+    machine
   end
 
+  # LATER this overlaps with unique_module_name
   defmacro module_name do
     quote do
       String.to_atom("TestStatechart#{__ENV__.line}")
+    end
+  end
+
+  defmacro unique_module_name do
+    quote do
+      String.to_atom("#{__MODULE__}_#{__ENV__.line}")
     end
   end
 
@@ -28,7 +36,7 @@ defmodule Statechart.Case do
     named_module_ast =
       quote do
         {:module, name, _, _} =
-          defmodule String.to_atom("#{__MODULE__}_#{__ENV__.line}") do
+          defmodule unquote(__MODULE__).unique_module_name() do
             unquote(block)
           end
 

@@ -4,44 +4,41 @@ defmodule Statechart.Build.MacroSubchart do
     This module does the heavy lifting for the `Statechart.subchart` macro.
     """
 
-  require Statechart.Schema.Node, as: Node
-  alias __MODULE__
+  use TypedStruct
+  alias Statechart.Build.AccFunctions
   alias Statechart.Build.AccNodeStack
   alias Statechart.Build.AccSchema
   alias Statechart.Build.AccStep
   alias Statechart.Build.MacroState
-  alias Statechart.Build.MacroChart
   alias Statechart.Schema
   alias Statechart.Schema.Tree
 
-  def build_ast(name, module, opts, block) do
-    quote do
-      require MacroChart
-      require AccNodeStack
-
-      MacroChart.throw_if_not_in_statechart_block(
-        "subchart must be called inside a statechart/2 block"
-      )
-
-      AccNodeStack.node_stack do
-        MacroSubchart.__do__(
-          __ENV__,
-          unquote(name),
-          unquote(module),
-          unquote(opts |> Macro.escape())
-        )
-
-        unquote(block)
-      end
-    end
+  typedstruct do
+    field :module, module
+    field :connections, %{atom => atom}
   end
 
-  @spec __do__(Macro.Env.t(), Statechart.state(), module(), Keyword.t()) :: :ok
-  def __do__(env, name, module, opts) do
+  @spec build_definition(module, list()) :: t()
+  def build_definition(module, connections \\ []) when is_list(connections) do
+    connections_as_map =
+      Enum.reduce(connections, %{}, fn
+        state_name, connections when is_atom(state_name) ->
+          Map.put(connections, state_name, state_name)
+
+        {state_name, target_name}, connections
+        when is_atom(state_name) and is_atom(target_name) ->
+          Map.put(connections, state_name, target_name)
+
+        keyword_list, connections when is_list(keyword_list) ->
+          Map.merge(connections, Map.new(keyword_list))
+      end)
+
+    %__MODULE__{module: module, connections: connections_as_map}
+  end
+
+  def __from_keyword_value__(env, subchart_module) do
     case AccStep.get(env) do
-      :insert_nodes -> MacroState.insert_node(env, name, opts)
-      # LATER I don't this I need this extra step
-      :insert_subcharts -> insert_subchart(env, module)
+      :insert_subcharts -> __do_from_keyword_value__(env, subchart_module)
       _ -> :ok
     end
   end
@@ -51,40 +48,55 @@ defmodule Statechart.Build.MacroSubchart do
   # That root node is the sole child of a new node in the parent schema.
   # That parent node has a local of the parent schema.
   # It has a default to the subschema root node
-  defp insert_subchart(env, subchart_module) do
-    local_id = AccNodeStack.local_id(env)
-    schema = AccSchema.get(env)
-    parent_node = schema |> Schema.tree() |> Tree.fetch_node!(local_id: local_id)
+  defp __do_from_keyword_value__(env, subchart_module) do
+    unless is_atom(subchart_module) do
+      raise(
+        ArgumentError,
+        "Invalid value given to the :subchart key in #{env.module}, line #{env.line}. " <>
+          "Expected a module, got: #{inspect(subchart_module)}"
+      )
+    end
 
-    subschema =
-      try do
-        %Schema{} = subchart_module.__schema__()
-      rescue
-        _ ->
-          raise StatechartError,
-                "the module #{subchart_module} on line #{env.line} does not " <>
-                  "define a Statechart.Schema.t struct. See `use Statechart`"
+    local_id = AccNodeStack.local_id(env)
+    parent_schema = AccSchema.get(env)
+
+    subchart_module.__function_asts__() |> Enum.each(&AccFunctions.add_function(env, &1))
+
+    schema_with_inserted_subchart =
+      with do
+        parent_tree = Schema.tree(parent_schema)
+        subchart_schema = %Schema{} = subchart_module.__schema_with_placeholders__()
+        subchart_tree = Schema.tree(subchart_schema)
+
+        {:ok, tree_with_inserted_subtree} =
+          Tree.validate_insert(parent_tree, subchart_tree, local_id: local_id)
+
+        Schema.put_tree(parent_schema, tree_with_inserted_subtree)
       end
 
-    parent_local_id = Node.local_id(parent_node)
-    subchart_root_name = subchart_module
-    tree = Schema.tree(schema)
+    schema_with_default_from_parent_node_to_subchart =
+      with do
+        origin_node =
+          schema_with_inserted_subchart
+          |> Schema.tree()
+          |> Tree.fetch_node!(local_id: local_id)
 
-    subtree = Schema.tree(subschema)
+        subchart_root_name = subchart_module
+        MacroState.insert_default(schema_with_inserted_subchart, origin_node, subchart_root_name)
+      end
 
-    {:ok, tree_with_inserted_subtree} =
-      Tree.validate_insert(tree, subtree, local_id: parent_local_id)
-
-    new_schema = Schema.put_tree(schema, tree_with_inserted_subtree)
-
-    origin_node = Tree.fetch_node!(Schema.tree(new_schema), local_id: parent_local_id)
-    new_schema = MacroState.insert_default(new_schema, origin_node, subchart_root_name)
-    {:ok, new_schema}
-
-    new_tree = Schema.tree(new_schema)
-
-    AccSchema.put_tree(env, new_tree)
-
+    AccSchema.put(env, schema_with_default_from_parent_node_to_subchart)
     :ok
+  end
+
+  def subchart_api_ast(escaped_schema_with_placeholders) do
+    quote do
+      def __schema_with_placeholders__, do: unquote(escaped_schema_with_placeholders)
+
+      def __function_asts__ do
+        # TODO this implementation details belongs in AccFunctions
+        @__statechart_functions__
+      end
+    end
   end
 end

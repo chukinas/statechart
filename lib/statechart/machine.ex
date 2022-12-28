@@ -14,12 +14,8 @@ defmodule Statechart.Machine do
     iex> defmodule ToggleStatechart do
     ...>   use Statechart
     ...>   statechart default: :on do
-    ...>     state :on do
-    ...>       :TOGGLE >>> :off
-    ...>     end
-    ...>     state :off do
-    ...>       :TOGGLE >>> :on
-    ...>     end
+    ...>     state :on,  event: :TOGGLE >>> :off
+    ...>     state :off, event: :TOGGLE >>> :on
     ...>   end
     ...> end
     ...>
